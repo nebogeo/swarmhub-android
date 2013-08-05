@@ -115,19 +115,19 @@
   (let ((nutrients (find type nutrients-metric)))
     (if (not nutrients)
         (error "nutrients type " type " not found")
-        (let ((quality (find quality (nutrients-table nutrients))))
-          (if (not quality)
+        (let ((q (find quality (nutrients-table nutrients))))
+          (if (not q)
               (error "quality " quality " not found")
               (get-nutrients-inner
                (nutrients-amount nutrients)
-               quality amount season crop soil))))))
+               q amount season crop soil))))))
 
 (define (get-nutrients-inner quantity quality amount season crop soil)
   (process-nutrients
    amount
    quantity
    (list
-   ;; nitrogen
+    ;; nitrogen
     (let ((s (nitrogen-season (quality-n quality) season)))
       (if (not s)
           (error "season not found")
@@ -220,7 +220,6 @@
    (layout 'fill-parent 'fill-parent 1 'left)
    l))
 
-
 (define-activity-list
   (activity
    "main"
@@ -262,7 +261,15 @@
 
      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
      (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
-              (lambda (v) (update-type! v)))
+              (lambda (v)
+                (cons
+                 (update-widget 'spinner (get-id "cquality") 'array
+                                (cond
+                                 ((equal? v cattle) (list "2" "6" "10"))
+                                 ((equal? v pig) (list "2" "4" "6"))
+                                 ((equal? v poultry) (list "layer" "broiler"))
+                                 ((equal? v FYM) (list "fresh" "other"))))
+                 (update-type! v))))
 
      (horiz
       (vert
@@ -281,7 +288,7 @@
                (lambda (v) (update-season! v))))
       (vert
        (text-view (make-id "quality-text") "Quality" 15 fillwrap)
-       (spinner (make-id "quality") (list "2" "4" "6") fillwrap
+       (spinner (make-id "cquality") (list "2" "4" "6") fillwrap
                 (lambda (v) (update-quality! v)))))
 
      (text-view (make-id "amount-text") "Amount" 15 fillwrap)

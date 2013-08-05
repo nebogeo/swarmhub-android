@@ -283,7 +283,7 @@ public class StarwispBuilder
         }
     }
 
-    public void Update(Activity ctx, JSONArray arr) {
+    public void Update(final Activity ctx, JSONArray arr) {
         try {
 
             String type = arr.getString(0);
@@ -372,6 +372,39 @@ public class StarwispBuilder
                     v.SetDrawList(arr.getJSONArray(3));
                 }
             }
+
+            if (type.equals("spinner")) {
+                Spinner v = (Spinner)vv;
+                if (token.equals("array")) {
+                    final JSONArray items = arr.getJSONArray(3);
+                    ArrayList<String> spinnerArray = new ArrayList<String>();
+
+                    for (int i=0; i<items.length(); i++) {
+                        spinnerArray.add(items.getString(i));
+                    }
+
+                    ArrayAdapter spinnerArrayAdapter =
+                        new ArrayAdapter<String>(ctx,
+                                                 android.R.layout.simple_spinner_item,
+                                                 spinnerArray);
+                    v.setAdapter(spinnerArrayAdapter);
+
+                    final int wid = id;
+                    // need to update for new values
+                    v.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        public void onItemSelected(AdapterView<?> a, View v, int pos, long id) {
+                            try {
+                                CallbackArgs((StarwispActivity)ctx,wid,"\""+items.getString(pos)+"\"");
+                            } catch (JSONException e) {
+                                Log.e("starwisp", "Error parsing data " + e.toString());
+                            }
+                        }
+                        public void onNothingSelected(AdapterView<?> v) {}
+                    });
+
+                }
+            }
+
 
         } catch (JSONException e) {
             Log.e("starwisp", "Error parsing data " + e.toString());

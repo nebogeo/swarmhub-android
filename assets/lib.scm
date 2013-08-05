@@ -326,8 +326,7 @@
 (define root 0)
 
 (define (define-activity-list . args)
-  (set! root (activity-list args))
-  (display root)(newline))
+  (set! root (activity-list args)))
 
 
 ;; called by java
@@ -352,7 +351,6 @@
 ;; called by java
 (define (widget-callback activity-name widget-id args)
   (let ((activity (activity-list-find root activity-name)))
-    (display "found activity")(newline)
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
         (let ((widget (widget-find (list (activity-layout activity)) widget-id)))
@@ -360,8 +358,6 @@
           (if (not widget)
               (begin (display "no widget ")(display widget-id)(display " in ")(display activity-name)(newline))
               (begin
-                (display "doing stuff")(newline)
-                (display (widget-type widget))(newline)
                 (send (scheme->json
                        (cond
                         ((equal? (widget-type widget) "edit-text")
@@ -371,7 +367,6 @@
                         ((equal? (widget-type widget) "seek-bar")
                          ((seek-bar-listener widget) (car args)))
                         ((equal? (widget-type widget) "spinner")
-                         (display "spinner calling")(newline)
                          ((spinner-listener widget) (car args)))
                         (else (display "no callbacks for type ")
                               (display (widget-type widget))(newline))))))))))
