@@ -17,6 +17,23 @@
 
 ;; calculator
 
+(define cattle "Cattle Slurry")
+(define FYM "Farmyard Manure")
+(define pig "Pig Slurry")
+(define poultry "Poultry Litter")
+
+(define normal "Normal")
+(define grass-oilseed "Grassland/Winter oilseed rape")
+
+(define sandyshallow "Sandy/Shallow")
+(define mediumheavy "Medium/Heavy")
+
+(define autumn "Autumn")
+(define winter "Winter")
+(define spring "Spring")
+(define summer "Summer")
+
+
 (define (nutrients type units amount table) (list type units amount table))
 (define (nutrients-type n) (list-ref n 0))
 (define (nutrients-units n) (list-ref n 1))
@@ -34,10 +51,10 @@
   (list autumn winter spring summer))
 (define (nitrogen-season n s)
   (cond
-    ((equal? s "autumn") (list-ref n 0))
-    ((equal? s "winter") (list-ref n 1))
-    ((equal? s "spring") (list-ref n 2))
-    ((equal? s "summer") (list-ref n 3))
+    ((equal? s autumn) (list-ref n 0))
+    ((equal? s winter) (list-ref n 1))
+    ((equal? s spring) (list-ref n 2))
+    ((equal? s summer) (list-ref n 3))
     (else (error "season " s " not found") #f)))
 
 (define (soil sandyshallow mediumheavy)
@@ -45,17 +62,17 @@
 (define (soil? s) (list? s))
 (define (get-soil s t)
   (cond
-    ((equal? t "sandyshallow") (list-ref t 0))
-    ((equal? t "mediumheavy") (list-ref t 1))
+    ((equal? t sandyshallow) (list-ref s 0))
+    ((equal? t mediumheavy) (list-ref s 1))
     (else (error "soil type " t " not found") #f)))
 
-(define (crop normal grass-oilseed)
-  (list normal grass-oilseed))
+(define (crop normal g)
+  (list normal g))
 (define (crop? c) (list? c))
 (define (get-crop c t)
   (cond
-    ((equal? t "normal") (list-ref c 0))
-    ((equal? t "grass-oilseed") (list-ref c 1))
+    ((equal? t normal) (list-ref c 0))
+    ((equal? t grass-oilseed) (list-ref c 1))
     (else (error "crop type " t " not found") #f)))
 
 
@@ -68,24 +85,24 @@
 (define nutrients-metric
   (list
    (nutrients
-    "cattle" "tons" 100
+    cattle "m3" 100
     (list
-     (quality 2 (nitrogen (soil (crop 8 16) (crop 48 56))  48 72 56) 30 220)
-     (quality 6 (nitrogen (soil (crop 13 26) (crop 65 78)) 65 91 65) 60 290)
-     (quality 10 (nitrogen (soil (crop 18 36) (crop 72 90)) 72 90 72) 90 360)))
+     (quality "2" (nitrogen (soil (crop 8 16) (crop 48 56))  48 72 56) 30 220)
+     (quality "6" (nitrogen (soil (crop 13 26) (crop 65 78)) 65 91 65) 60 290)
+     (quality "10" (nitrogen (soil (crop 18 36) (crop 72 90)) 72 90 72) 90 360)))
    (nutrients
-    "pig" "m3" 50
+    pig "m3" 50
     (list
-     (quality 2 (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
-     (quality 4 (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
-     (quality 6 (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
+     (quality "2" (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
+     (quality "4" (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
+     (quality "6" (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
    (nutrients
-    "poultry" "tons" 10
+    poultry "tons" 10
     (list
      (quality "layer" (nitrogen (soil (crop 19 28.5) (crop 47.5 57)) 47.5 66.5 66.5) 84 86)
      (quality "broiler" (nitrogen (soil (crop 30 45) (crop 75 90)) (soil 60 75) 90 90) 150 162)))
    (nutrients
-    "FYM" "tons" 50
+    FYM "tons" 50
     (list
      (quality "other" (nitrogen (soil 15 30) 30 30 30) 95 360) ;; other
      (quality "fresh" (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
@@ -134,8 +151,8 @@
 (define (state calc)
   (list calc))
 
-(define (state-calc s) (list-ref 0 s))
-(define (state-modify-calc s v) (list-replace 0 s v))
+(define (state-calc s) (list-ref s 0))
+(define (state-modify-calc s v) (list-replace s 0 v))
 
 (define (calc type amount quality season crop soil)
   (list type amount quality season crop soil))
@@ -157,7 +174,7 @@
   (mutate-state!
    (lambda (s)
      (state-modify-calc s (fn (state-calc s)))))
-   (calc))
+  (run-calc))
 
 (define (update-type! v) (update-calc! (lambda (c) (calc-modify-type c v))))
 (define (update-amount! v) (update-calc! (lambda (c) (calc-modify-amount c v))))
@@ -166,25 +183,43 @@
 (define (update-crop! v) (update-calc! (lambda (c) (calc-modify-crop c v))))
 (define (update-soil! v) (update-calc! (lambda (c) (calc-modify-soil c v))))
 
-(define state (state (calc "pig" 25 2 "winter" "normal" "mediumheavy")))
+(define gstate (state (calc pig 25 "2" "autumn" normal mediumheavy)))
 
 (define (mutate-state! fn)
-  (set! state (fn state)))
+  (set! gstate (fn gstate)))
 
-(define (calc)
-  (let* ((type (calc-type (state-calc state)))
-         (amount (calc-amount (state-calc state)))
-         (quality (calc-quality (state-calc state)))
-         (season (calc-season (state-calc state)))
-         (crop (calc-crop (state-calc state)))
-         (soil (calc-soil (state-calc state)))
+(define (run-calc)
+  (let* ((type (calc-type (state-calc gstate)))
+         (amount (calc-amount (state-calc gstate)))
+         (quality (calc-quality (state-calc gstate)))
+         (season (calc-season (state-calc gstate)))
+         (crop (calc-crop (state-calc gstate)))
+         (soil (calc-soil (state-calc gstate)))
          (amounts (get-nutrients type amount quality season crop soil)))
     (list
-     (update-widget 'text-view (get-id "na") 'text (number->string (list-ref amounts 0)))
-     (update-widget 'text-view (get-id "pa") 'text (number->string (list-ref amounts 1)))
-     (update-widget 'text-view (get-id "ka") 'text (number->string (list-ref amounts 2))))))
+     (update-widget 'text-view (get-id "camount-value") 'text
+                    (string-append (number->string amount) " "
+                                   (nutrients-units (find type nutrients-metric))))
+     (update-widget 'text-view (get-id "cna") 'text (number->string (list-ref amounts 0)))
+     (update-widget 'text-view (get-id "cpa") 'text (number->string (list-ref amounts 1)))
+     (update-widget 'text-view (get-id "cka") 'text (number->string (list-ref amounts 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (horiz . l)
+  (linear-layout
+   (make-id "h")
+   'horizontal
+   (layout 'fill-parent 'fill-parent 1 'left)
+   l))
+
+(define (vert . l)
+  (linear-layout
+   (make-id "v")
+   'vertical
+   (layout 'fill-parent 'fill-parent 1 'left)
+   l))
+
 
 (define-activity-list
   (activity
@@ -222,47 +257,52 @@
 
   (activity
    "calc"
-    (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
-     (list
-      (text-view (make-id "title") "Crapp Calculator" 40 fillwrap)
-      (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
-      (spinner (make-id "soil") (list "All soils" "Sandy/Shallow" "Medium/Heavy") fillwrap
-               (lambda (v) (update-soil! v)))
-      (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
-      (spinner (make-id "crop") (list "Normal" "Grassland" "Winter oilseed rape") fillwrap
-               (lambda (v) (update-crop! v)))
-      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
-      (spinner (make-id "manure") (list "Cattle slurry" "Farmyard manure" "Pig slurry" "Poultry litter") fillwrap
-               (lambda (v) (update-type! v)))
-      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
-      (seek-bar (make-id "amount") 100 fillwrap
-                (lambda (v) (update-amount! v)))
-      (text-view (make-id "amount-value") "4500 gallons" 15 fillwrap)
-      (image-view (make-id "example") "test" wrap)
-      (linear-layout
-       (make-id "upper-out")
-       'horizontal
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (text-view (make-id "nt") "N" 30 fillwrap)
-        (text-view (make-id "pt") "P" 30 fillwrap)
-        (text-view (make-id "kt") "K" 30 fillwrap)))
-      (linear-layout
-       (make-id "lower-out")
-       'horizontal
-       (layout 'fill-parent 'fill-parent 1 'centre)
-       (list
-        (text-view (make-id "na") "12" 50
-                   (layout 'fill-parent 'fill-parent 1 'centre))
-        (text-view (make-id "pa") "75" 50
-                   (layout 'fill-parent 'fill-parent 1 'centre))
-        (text-view (make-id "ka") "55" 50
-                   (layout 'fill-parent 'fill-parent 1 'centre))))
-      (button (make-id "finished") "Done" 20 fillwrap
-              (lambda () (list (finish-activity 99))))))
+    (vert
+     (text-view (make-id "title") "Crapp Calculator" 40 fillwrap)
+
+     (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
+     (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
+              (lambda (v) (update-type! v)))
+
+     (horiz
+      (vert
+       (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
+       (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
+               (lambda (v) (update-soil! v))))
+      (vert
+       (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
+       (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
+                (lambda (v) (update-crop! v)))))
+
+     (horiz
+      (vert
+       (text-view (make-id "season-text") "Season" 15 fillwrap)
+       (spinner (make-id "season") (list autumn winter spring summer) fillwrap
+               (lambda (v) (update-season! v))))
+      (vert
+       (text-view (make-id "quality-text") "Quality" 15 fillwrap)
+       (spinner (make-id "quality") (list "2" "4" "6") fillwrap
+                (lambda (v) (update-quality! v)))))
+
+     (text-view (make-id "amount-text") "Amount" 15 fillwrap)
+     (seek-bar (make-id "amount") 100 fillwrap
+               (lambda (v) (update-amount! v)))
+
+     (text-view (make-id "camount-value") "4500 gallons" 15 fillwrap)
+     ;;      (image-view (make-id "example") "test" wrap)
+     (horiz
+      (text-view (make-id "nt") "N" 30 fillwrap)
+      (text-view (make-id "pt") "P" 30 fillwrap)
+      (text-view (make-id "kt") "K" 30 fillwrap))
+     (horiz
+      (text-view (make-id "cna") "12" 30
+                 (layout 'fill-parent 'fill-parent 1 'centre))
+      (text-view (make-id "cpa") "75" 30
+                 (layout 'fill-parent 'fill-parent 1 'centre))
+      (text-view (make-id "cka") "55" 30
+                 (layout 'fill-parent 'fill-parent 1 'centre)))
+     (button (make-id "finished") "Done" 20 fillwrap
+             (lambda () (list (finish-activity 99)))))
 
    (lambda (activity)
      (activity-layout activity))

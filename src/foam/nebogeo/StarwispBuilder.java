@@ -154,6 +154,7 @@ public class StarwispBuilder
 
             if (type.equals("text-view")) {
                 TextView v = new TextView(ctx);
+                Log.i("starwisp","text view id: "+arr.getInt(1));
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
