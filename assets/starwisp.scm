@@ -177,11 +177,11 @@
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
 
-;(define (fields-remove-field f name)
-;  (filter
-;   (lambda (field)
-;     (not (equal? name (field-name field))))
-;   f))
+(define (fields-remove-field f name)
+  (filter
+   (lambda (field)
+     (not (equal? name (field-name field))))
+   f))
 
 (define (saved-data-save d)
   (let ((f (open-output-file "/sdcard/swarmhub-data.scm")))
@@ -238,8 +238,9 @@
   (define (_ f)
     (cond
      ((null? f) #f)
-     ((equal? (field-name (car f)) name) f)
-     (else (find-field (cdr f)))))
+     ((string=? (field-name (car f)) name)
+      (car f))
+     (else (_ (cdr f)))))
   (_ (get-fields)))
 
 (define (run-calc)
@@ -279,7 +280,6 @@
    l))
 
 (define (build-field-buttons)
-  (display "build-field-buttons")(newline)
   (if (null? (get-fields))
       (list (text-view (make-id "temp") "Add some fields" 20 fillwrap))
       (map
@@ -457,17 +457,18 @@
       (text-view (make-id "ev2") "Farmyard manure 06/06/13" 15 fillwrap))
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda () (list (start-activity "fieldcalc" 2 ""))))
-;     (button (make-id "back") "Delete" 20 fillwrap
-;             (lambda ()
-;               (mutate-state!
-;                (lambda (s)
-;                  (state-modify-saved-data
-;                   s (lambda (d)
-;                       (saved-data-modify-fields
-;                        d
-;                        (fields-remove-field
-;                         (saved-data-fields d)))))))
-;               (list (finish-activity 99))))
+     (button (make-id "back") "Delete" 20 fillwrap
+             (lambda ()
+               (mutate-state!
+                (lambda (s)
+                  (state-modify-saved-data
+                   s (lambda (d)
+                       (saved-data-modify-fields
+                        d
+                        (fields-remove-field
+                         (get-fields)
+                         (field-name (state-field s))))))))
+               (list (finish-activity 99))))
      (button (make-id "back") "Back" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
 
@@ -476,11 +477,10 @@
     (lambda (activity arg)
 
       ;; load up into the current field
-;      (mutate-state!
-;       (lambda (s)
-;         (display (find-field arg))(newline)
-;         (state-modify-field
-;          s (find-field arg))))
+      (mutate-state!
+       (lambda (s)
+         (state-modify-field
+          s (find-field arg))))
 
       (list
        (update-widget 'text-view (get-id "field-title") 'text arg)))

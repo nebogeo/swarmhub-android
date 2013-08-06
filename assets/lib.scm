@@ -13,7 +13,16 @@
 ;; You should have received a copy of the GNU Affero General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+(define (filter fn l)
+  (foldl
+   (lambda (i r)
+     (if (fn i) (cons i r) r))
+   '()
+   l))
+
 ;; utils funcs for using lists as sets
+
 (define (set-remove a l)
   (if (null? l)
       '()
@@ -349,7 +358,6 @@
         (set! dynamic-widgets (cons w dynamic-widgets))))
 
 (define (update-dynamic-widgets! events)
-  (display events)(newline)
   (for-each
    (lambda (event)
      (if (equal? (list-ref event 2) 'contents)

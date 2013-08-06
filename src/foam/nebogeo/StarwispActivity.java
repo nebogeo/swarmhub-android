@@ -48,7 +48,7 @@ public class StarwispActivity extends Activity
             arg = extras.getString("arg");
         }
 
-        String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" '("+arg+"))");
+        String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" (list \""+arg+"\"))");
         View root = findViewById(R.id.main);
 
         try {
@@ -69,7 +69,7 @@ public class StarwispActivity extends Activity
             arg = extras.getString("arg");
         }
 
-        String ret=m_Scheme.eval("(activity-callback 'on-start \""+m_Name+"\" '("+arg+"))");
+        String ret=m_Scheme.eval("(activity-callback 'on-start \""+m_Name+"\" (list \""+arg+"\"))");
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
