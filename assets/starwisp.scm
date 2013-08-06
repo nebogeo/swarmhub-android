@@ -172,7 +172,8 @@
   (list
    (calc pig 25 "2" autumn normal mediumheavy)
    (field "" "" "")
-   (saved-data-load)))
+   (saved-data-load)
+   (list date-day date-month date-year)))
 
 (define (state-calc s) (list-ref s 0))
 (define (state-modify-calc s v) (list-replace s 0 v))
@@ -181,6 +182,8 @@
 (define (state-saved-data s) (list-ref s 2))
 (define (state-modify-saved-data s fn)
    (list-replace s 2 (saved-data-save (fn (state-saved-data s)))))
+(define (state-date s) (list-ref s 3))
+(define (state-modify-date s v) (list-replace s 3 v))
 
 (define (saved-data fields)
   (list fields))
@@ -266,6 +269,9 @@
 
 (define (current-field)
   (state-field gstate))
+
+(define (current-date)
+  (state-date gstate))
 
 (define (mutate-current-field! fn)
   (mutate-state!
@@ -561,7 +567,6 @@
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity requestcode resultcode)
-      (display "HWWLWLLWLWLWLWLW")(newline)
       (list
        (update-widget 'linear-layout (get-id "field-events-list") 'contents
                       (build-events)))))
@@ -571,13 +576,16 @@
     (vert
      (text-view (make-id "fieldcalc-title") "field name" 40 fillwrap)
      (horiz
-      (text-view (make-id "fc-date-text") (date->string (list 1 1 1)) 30 fillwrap)
+      (text-view (make-id "fc-date-text")
+                 (date->string (list date-day date-month date-year)) 30 fillwrap)
       (button (make-id "date") "Set date" 20 fillwrap
               (lambda ()
-                (display "button function")(newline)
                 (list (date-picker-dialog
                        "fieldcalc-date"
                        (lambda (day month year)
+                         (mutate-state!
+                          (lambda (s)
+                            (state-modify-date s (list day month year))))
                          (list
                           (update-widget 'text-view (make-id "fc-date-text") 'text
                                          (date->string (list day month year))))))))))
@@ -642,7 +650,7 @@
                    (field-add-event
                     field
                     (event (calc-type (state-calc gstate))
-                           (list 1 1 1)
+                           (current-date)
                            (calc-nutrients)))))
 
                 (mutate-saved-data!

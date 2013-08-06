@@ -76,6 +76,14 @@ public class starwisp extends StarwispActivity
         m_Builder = new StarwispBuilder(m_Scheme);
         m_Name = "main";
 
+        // tell scheme the date
+        final Calendar c = Calendar.getInstance();
+        int day = c.get(Calendar.DAY_OF_MONTH);
+        int month = c.get(Calendar.MONTH);
+        int year = c.get(Calendar.YEAR);
+
+        m_Scheme.eval("(define date-day "+day+") (define date-month "+month+") (define date-year "+year+")");
+
         Log.i("starwisp","started, now running starwisp.scm...");
         m_Scheme.eval(m_Scheme.readRawTextFile(this, "starwisp.scm"));
 
