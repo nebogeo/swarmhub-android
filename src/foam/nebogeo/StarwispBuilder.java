@@ -196,6 +196,7 @@ public class StarwispBuilder
 
             if (type.equals("button")) {
                 Button v = new Button(ctx);
+                Log.i("starwisp","building button "+arr.getInt(1));
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
@@ -207,6 +208,8 @@ public class StarwispBuilder
                     }
                 });
                 parent.addView(v);
+
+                Log.i("starwisp","button added to "+ctx);
             }
 
             if (type.equals("seek-bar")) {
@@ -297,15 +300,18 @@ public class StarwispBuilder
             if (token.equals("toast")) {
                 Toast msg = Toast.makeText(ctx.getBaseContext(),arr.getString(3),Toast.LENGTH_SHORT);
                 msg.show();
+                return;
             }
 
             if (token.equals("start-activity")) {
                 ActivityManager.StartActivity(ctx,arr.getString(3),arr.getInt(4));
+                return;
             }
 
             if (token.equals("finish-activity")) {
                 ctx.setResult(arr.getInt(3));
                 ctx.finish();
+                return;
             }
 
             // now try and find the widget
@@ -319,13 +325,26 @@ public class StarwispBuilder
             // tokens that work on everything
             if (token.equals("hide")) {
                 vv.setVisibility(View.GONE);
+                return;
             }
 
             if (token.equals("show")) {
                 vv.setVisibility(View.VISIBLE);
+                return;
             }
 
             // special cases
+            if (type.equals("linear-layout")) {
+                LinearLayout v = (LinearLayout)vv;
+                if (token.equals("contents")) {
+                    v.removeAllViews();
+                    JSONArray children = arr.getJSONArray(3);
+                    for (int i=0; i<children.length(); i++) {
+                        Build((StarwispActivity)ctx,new JSONArray(children.getString(i)), v);
+                    }
+                }
+            }
+
             if (type.equals("image-view")) {
                 ImageView v = (ImageView)vv;
                 if (token.equals("image")) {
@@ -333,6 +352,7 @@ public class StarwispBuilder
                                                                "drawable", ctx.getPackageName());
                     v.setImageResource(iid);
                 }
+                return;
             }
 
             if (type.equals("text-view")) {
@@ -340,6 +360,7 @@ public class StarwispBuilder
                 if (token.equals("text")) {
                     v.setText(arr.getString(3));
                 }
+                return;
             }
 
             if (type.equals("edit-text")) {
@@ -347,6 +368,7 @@ public class StarwispBuilder
                 if (token.equals("text")) {
                     v.setText(arr.getString(3));
                 }
+                return;
             }
 
 
@@ -364,6 +386,7 @@ public class StarwispBuilder
                         }
                     });
                 }
+                return;
             }
 
             if (type.equals("canvas")) {
@@ -371,6 +394,7 @@ public class StarwispBuilder
                 if (token.equals("drawlist")) {
                     v.SetDrawList(arr.getJSONArray(3));
                 }
+                return;
             }
 
             if (type.equals("spinner")) {
@@ -403,8 +427,8 @@ public class StarwispBuilder
                     });
 
                 }
+                return;
             }
-
 
         } catch (JSONException e) {
             Log.e("starwisp", "Error parsing data " + e.toString());

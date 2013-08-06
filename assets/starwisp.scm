@@ -148,11 +148,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (state calc)
-  (list calc))
+(define (field name soil crop)
+  (list name soil crop))
+(define (field-name f) (list-ref f 0))
+(define (field-modify-name f v) (list-replace f 0 v))
+(define (field-soil f) (list-ref f 1))
+(define (field-modify-soil f v) (list-replace f 1 v))
+(define (field-crop f) (list-ref f 2))
+(define (field-modify-crop f v) (list-replace f 2 v))
+
+
+(define (state)
+  (list
+   (calc pig 25 "2" "autumn" normal mediumheavy)
+   (field "" "" "")
+   (saved-data-load)))
 
 (define (state-calc s) (list-ref s 0))
 (define (state-modify-calc s v) (list-replace s 0 v))
+(define (state-field s) (list-ref s 1))
+(define (state-modify-field s v) (list-replace s 1 v))
+(define (state-saved-data s) (list-ref s 2))
+(define (state-modify-saved-data s fn)
+   (list-replace s 2 (saved-data-save (fn (state-saved-data s)))))
+
+(define (saved-data fields)
+  (list fields))
+(define (saved-data-fields f) (list-ref f 0))
+(define (saved-data-modify-fields f v) (list-replace f 0 v))
+
+(define (saved-data-save d)
+  (let ((f (open-output-file "/sdcard/swarmhub-data.scm")))
+    (write d f)
+    (close-output-port f))
+  d)
+
+(define (saved-data-load)
+  (let* ((f (open-input-file "/sdcard/swarmhub-data.scm")))
+    (if (not f)
+        (saved-data-save (saved-data '()))
+        (let ((r (read f)))
+          (close-input-port f)
+          r))))
 
 (define (calc type amount quality season crop soil)
   (list type amount quality season crop soil))
@@ -183,7 +220,7 @@
 (define (update-crop! v) (update-calc! (lambda (c) (calc-modify-crop c v))))
 (define (update-soil! v) (update-calc! (lambda (c) (calc-modify-soil c v))))
 
-(define gstate (state (calc pig 25 "2" "autumn" normal mediumheavy)))
+(define gstate (state))
 
 (define (mutate-state! fn)
   (set! gstate (fn gstate)))
@@ -204,6 +241,10 @@
      (update-widget 'text-view (get-id "cpa") 'text (number->string (list-ref amounts 1)))
      (update-widget 'text-view (get-id "cka") 'text (number->string (list-ref amounts 2))))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (horiz . l)
@@ -220,39 +261,51 @@
    (layout 'fill-parent 'fill-parent 1 'left)
    l))
 
+(define (build-field-buttons)
+  (map
+   (lambda (field)
+     (button
+      (make-id (field-name field))
+      (field-name field)
+      20 fillwrap
+      (lambda () (list (start-activity "field" 2)))))
+   (saved-data-fields (state-saved-data gstate))))
+
 (define-activity-list
   (activity
    "main"
-    (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
-     (list
-      (text-view (make-id "title") "Swarm Hub App" 40 fillwrap)
-      (linear-layout
-       (make-id "top")
-       'vertical
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (text-view (make-id "title") "Your fields" 30 fillwrap)
-        (button (make-id "f1") "Long Meadow" 20 fillwrap (lambda () (list (start-activity "field" 2))))
-        (button (make-id "f2") "Barn Meadow" 20 fillwrap (lambda () (list (start-activity "field" 2))))
-        (button (make-id "f3") "New field" 20 fillwrap
-                (lambda ()
-                  (list
-                   (start-activity "newfield" 2))))))
-      (text-view (make-id "measure-text") "Measurements" 20 fillwrap)
-      (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
-      (button (make-id "f2") "Calculator" 20 fillwrap
-              (lambda () (list (start-activity "calc" 2))))))
+    (vert
+     (text-view (make-id "title") "Swarm Hub App" 40 fillwrap)
+     (text-view (make-id "title") "Your fields" 30 fillwrap)
+     (linear-layout
+      (make-id "fields")
+      'vertical
+      (layout 'fill-parent 'fill-parent 1 'left)
+      (build-field-buttons))
+     (button (make-id "f3") "New field" 20 fillwrap
+             (lambda ()
+               (list
+                (start-activity "newfield" 2))))
+     (text-view (make-id "measure-text") "Measurements" 20 fillwrap)
+     (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
+     (button (make-id "f2") "Calculator" 20 fillwrap
+             (lambda () (list (start-activity "calc" 2)))))
    (lambda (activity)
      (activity-layout activity))
    (lambda (activity) '())
+   (lambda (activity)
+     (display "on resume")(newline)
+     (list
+      (update-widget 'linear-layout (get-id "fields") 'contents
+                     (build-field-buttons))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
-   (lambda (activity) '())
-   (lambda (activity) '()))
+   (lambda (activity)
+     (display "on return result")(newline)
+     (list
+      (update-widget 'linear-layout (get-id "fields") 'contents
+                     (build-field-buttons)))))
 
   (activity
    "calc"
@@ -322,27 +375,44 @@
 
   (activity
    "newfield"
-    (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
-     (list
-      (text-view (make-id "title") "Make a new field" 40 fillwrap)
-      (text-view (make-id "name-txt") "Field name" 15 fillwrap)
-      (edit-text (make-id "name") "" 20 fillwrap (lambda (v) (list)))
+    (vert
+     (text-view (make-id "title") "Make a new field" 40 fillwrap)
+     (text-view (make-id "name-txt") "Field name" 15 fillwrap)
+     (edit-text (make-id "name") "" 20 fillwrap
+                (lambda (v)
+                  (mutate-state!
+                   (lambda (s)
+                     (state-modify-field
+                      s (field-modify-name (state-field s) v))))))
       (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
-      (spinner (make-id "soil") (list "All soils" "Sandy/Shallow" "Medium/Heavy") fillwrap (lambda (v) (list)))
+      (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
+               (lambda (v)
+                  (mutate-state!
+                   (lambda (s)
+                     (state-modify-field
+                      s (field-modify-soil (state-field s) v))))))
       (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
-      (spinner (make-id "crop") (list "Normal" "Grassland" "Winter oilseed rape") fillwrap (lambda (v) (list)))
-      (linear-layout
-       (make-id "out")
-       'horizontal
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (button (make-id "save") "Save" 20 fillwrap
-                (lambda () (list (finish-activity 99))))
-        (button (make-id "cancel") "Cancel" 20 fillwrap
-                (lambda () (list (finish-activity 99))))))))
+      (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
+               (lambda (v)
+                 (mutate-state!
+                  (lambda (s)
+                    (state-modify-field
+                     s (field-modify-crop (state-field s) v))))))
+      (horiz
+       (button (make-id "save") "Save" 20 fillwrap
+               (lambda ()
+                 (display (state-field gstate))(newline)
+                 (mutate-state!
+                  (lambda (s)
+                    (state-modify-saved-data
+                     s (lambda (d)
+                         (saved-data-modify-fields
+                          d (cons (state-field s)
+                                  (saved-data-fields d)))))))
+                 (list (finish-activity 99))))
+       (button (make-id "cancel") "Cancel" 20 fillwrap
+               (lambda () (list (finish-activity 99)))))
+      )
 
     (lambda (activity)
       (activity-layout activity))

@@ -175,7 +175,7 @@
       (if (and (not (null? v)) (not (list? (car v))) (pair? (car v)))
           (assoc->json v)
           (list->json v)))))
-   (else (display "value->js, unsupported type for ") (display v) (newline) "[]")))
+   (else "[]"))) ;;(display "value->js, unsupported type for ") (display v) (newline) "[]")))
 
 (define (list->json l)
   (define (_ l s)
@@ -274,6 +274,7 @@
 (define (update-widget type id token value) (list type id token value))
 
 (define id-map ())
+(define current-id 1)
 
 (define (find-id name id-map)
   (cond
@@ -284,9 +285,20 @@
 (define (get-id name)
   (find-id name id-map))
 
+;(define (make-id name)
+;  (set! id-map (cons (list name (length id-map)) id-map))
+;  (get-id name))
+
 (define (make-id name)
-  (set! id-map (cons (list name (length id-map)) id-map))
-  (get-id name))
+  (let ((existing (get-id name)))
+    (cond
+     (existing existing)
+     (else
+      (set! id-map (cons (list name current-id) id-map))
+      (display name)(display "=")(display current-id)(newline)
+      (set! current-id (+ current-id 1))
+      (get-id name)))))
+
 
 (define wrap (layout 'wrap-content 'wrap-content 1 'left))
 (define fillwrap (layout 'fill-parent 'wrap-content 1 'left))
@@ -298,6 +310,7 @@
 
 (define (activity-name a) (list-ref a 0))
 (define (activity-layout a) (list-ref a 1))
+(define (activity-modify-layout a v) (list-replace a 1 v))
 (define (activity-on-create a) (list-ref a 2))
 (define (activity-on-start a) (list-ref a 3))
 (define (activity-on-resume a) (list-ref a 4))
@@ -324,10 +337,15 @@
    (else (widget-find (cdr widget-list) id))))
 
 (define root 0)
+(define dynamic-widgets '())
 
 (define (define-activity-list . args)
   (set! root (activity-list args)))
 
+;; hack for dynamic widgets
+(define (add-new-widget! w)
+  ;; todo - when to clear out?
+  (set! dynamic-widgets (cons w dynamic-widgets)))
 
 ;; called by java
 (define (activity-callback type activity-name args)
@@ -337,12 +355,12 @@
         (let ((ret (cond
                     ;; todo update activity...?
                     ((eq? type 'on-create) ((activity-on-create activity) activity))
-                    ((eq? type 'on-start) ((activity-on-create activity) activity))
-                    ((eq? type 'on-stop) ((activity-on-create activity) activity))
-                    ((eq? type 'on-resume) ((activity-on-create activity) activity))
-                    ((eq? type 'on-pause) ((activity-on-create activity) activity))
-                    ((eq? type 'on-destroy) ((activity-on-create activity) activity))
-                    ((eq? type 'on-activity-result) ((activity-on-create activity) activity))
+                    ((eq? type 'on-start) ((activity-on-start activity) activity))
+                    ((eq? type 'on-stop) ((activity-on-stop activity) activity))
+                    ((eq? type 'on-resume) ((activity-on-resume activity) activity))
+                    ((eq? type 'on-pause) ((activity-on-pause activity) activity))
+                    ((eq? type 'on-destroy) ((activity-on-destroy activity) activity))
+                    ((eq? type 'on-activity-result) ((activity-on-activity-result activity) activity))
                     (else
                      (display "no callback called ")(display type)(newline)
                      '()))))
@@ -353,7 +371,7 @@
   (let ((activity (activity-list-find root activity-name)))
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
-        (let ((widget (widget-find (list (activity-layout activity)) widget-id)))
+        (let ((widget (widget-find (list (activity-layout activity) dynamic-widgets) widget-id)))
           (display "found widget")(newline)
           (if (not widget)
               (begin (display "no widget ")(display widget-id)(display " in ")(display activity-name)(newline))
