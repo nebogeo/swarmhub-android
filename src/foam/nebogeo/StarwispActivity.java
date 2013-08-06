@@ -41,7 +41,14 @@ public class StarwispActivity extends Activity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" '())");
+
+        String arg = "none";
+        Bundle extras = getIntent().getExtras();
+        if (extras!=null) {
+            arg = extras.getString("arg");
+        }
+
+        String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" '("+arg+"))");
         View root = findViewById(R.id.main);
 
         Log.i("starwisp", root.toString());
@@ -58,7 +65,14 @@ public class StarwispActivity extends Activity
     public void onStart()
     {
         super.onStart();
-        String ret=m_Scheme.eval("(activity-callback 'on-start \""+m_Name+"\" '())");
+
+        String arg = "none";
+        Bundle extras = getIntent().getExtras();
+        if (extras!=null) {
+            arg = extras.getString("arg");
+        }
+
+        String ret=m_Scheme.eval("(activity-callback 'on-start \""+m_Name+"\" '("+arg+"))");
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {

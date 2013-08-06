@@ -304,7 +304,7 @@ public class StarwispBuilder
             }
 
             if (token.equals("start-activity")) {
-                ActivityManager.StartActivity(ctx,arr.getString(3),arr.getInt(4));
+                ActivityManager.StartActivity(ctx,arr.getString(3),arr.getInt(4),arr.getString(5));
                 return;
             }
 

@@ -268,7 +268,7 @@
       (make-id (field-name field))
       (field-name field)
       20 fillwrap
-      (lambda () (list (start-activity "field" 2)))))
+      (lambda () (list (start-activity "field" 2 (field-name field))))))
    (saved-data-fields (state-saved-data gstate))))
 
 (define-activity-list
@@ -285,14 +285,15 @@
      (button (make-id "f3") "New field" 20 fillwrap
              (lambda ()
                (list
-                (start-activity "newfield" 2))))
+                (start-activity "newfield" 2 ""))))
      (text-view (make-id "measure-text") "Measurements" 20 fillwrap)
      (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
      (button (make-id "f2") "Calculator" 20 fillwrap
-             (lambda () (list (start-activity "calc" 2)))))
-   (lambda (activity)
+             (lambda () (list (start-activity "calc" 2 "")))))
+   (lambda (activity arg)
+     (display "on create")(newline)
      (activity-layout activity))
-   (lambda (activity) '())
+   (lambda (activity arg) '())
    (lambda (activity)
      (display "on resume")(newline)
      (list
@@ -301,8 +302,7 @@
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
-   (lambda (activity)
-     (display "on return result")(newline)
+   (lambda (activity requestcode resultcode)
      (list
       (update-widget 'linear-layout (get-id "fields") 'contents
                      (build-field-buttons)))))
@@ -364,14 +364,14 @@
      (button (make-id "finished") "Done" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
 
-   (lambda (activity)
+   (lambda (activity arg)
      (activity-layout activity))
+   (lambda (activity arg) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
-   (lambda (activity) '())
-   (lambda (activity) '()))
+   (lambda (activity requestcode resultcode) '()))
 
   (activity
    "newfield"
@@ -414,54 +414,49 @@
                (lambda () (list (finish-activity 99)))))
       )
 
-    (lambda (activity)
+    (lambda (activity arg)
       (activity-layout activity))
+    (lambda (activity arg) '())
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
-    (lambda (activity) '())
-    (lambda (activity) '()))
+    (lambda (activity requestcode resultcode) '()))
 
   (activity
    "field"
-    (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
-     (list
-      (text-view (make-id "title") "Long Meadow" 40 fillwrap)
-      (canvas (make-id "graph")
-              (layout 'fill-parent 200 1 'centre)
-              (list
+    (vert
+     (text-view (make-id "field-title") "Long Meadow" 40 fillwrap)
+     (canvas (make-id "graph")
+             (layout 'fill-parent 200 1 'centre)
+             (list
               (drawlist-line '(255 127 127) 2 '(0 200 100 100))
-               (drawlist-line '(255 127 127) 2 '(100 100 200 150))
-               (drawlist-line '(127 255 127) 2 '(0 200 100 110))
-               (drawlist-line '(127 255 127) 2 '(100 110 200 140))
-               (drawlist-line '(127 127 255) 2 '(0 200 100 90))
-               (drawlist-line '(127 127 255) 2 '(100 90 200 110))
-               ))
-      (text-view (make-id "events-txt") "Events" 20 fillwrap)
-      (linear-layout
-       (make-id "events")
-       'vertical
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (text-view (make-id "ev1") "Pig slurry 10/07/13" 15 fillwrap)
-        (text-view (make-id "ev2") "Farmyard manure 06/06/13" 15 fillwrap)))
-      (button (make-id "event") "New spreading event" 20 fillwrap
-              (lambda () (list (start-activity "fieldcalc" 2))))
-      (button (make-id "back") "Back" 20 fillwrap
-              (lambda () (list (finish-activity 99))))))
+              (drawlist-line '(255 127 127) 2 '(100 100 200 150))
+              (drawlist-line '(127 255 127) 2 '(0 200 100 110))
+              (drawlist-line '(127 255 127) 2 '(100 110 200 140))
+              (drawlist-line '(127 127 255) 2 '(0 200 100 90))
+              (drawlist-line '(127 127 255) 2 '(100 90 200 110))
+              ))
+     (text-view (make-id "events-txt") "Events" 20 fillwrap)
+     (vert
+      (text-view (make-id "ev1") "Pig slurry 10/07/13" 15 fillwrap)
+      (text-view (make-id "ev2") "Farmyard manure 06/06/13" 15 fillwrap))
+     (button (make-id "event") "New spreading event" 20 fillwrap
+             (lambda () (list (start-activity "fieldcalc" 2 ""))))
+     (button (make-id "back") "Back" 20 fillwrap
+             (lambda () (list (finish-activity 99)))))
 
-    (lambda (activity)
+    (lambda (activity arg)
       (activity-layout activity))
+    (lambda (activity arg)
+      (display "on-start")(newline)
+      (list
+       (update-widget 'text-view (get-id "field-title") 'text arg)))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
-    (lambda (activity) '())
-    (lambda (activity) '()))
+    (lambda (activity requestcode resultcode) '()))
 
   (activity
    "fieldcalc"
@@ -494,7 +489,7 @@
                ))
       (image-view (make-id "example") "testhalf" wrap)
       (button (make-id "camera") "Camera" 20 fillwrap
-              (lambda () (list (start-activity "camera" 2))))
+              (lambda () (list (start-activity "camera" 2 ""))))
       (linear-layout
        (make-id "upper-out")
        'horizontal
@@ -522,14 +517,14 @@
         (button (make-id "cancel") "Cancel" 20 fillwrap
                 (lambda () (list (finish-activity 99))))))))
 
-   (lambda (activity)
+   (lambda (activity arg)
      (activity-layout activity))
+   (lambda (activity arg) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
-   (lambda (activity) '())
-   (lambda (activity) '()))
+   (lambda (activity requestcode resultcode) '()))
 
   (activity
    "camera"
@@ -543,13 +538,13 @@
       (button (make-id "back") "Back" 20 fillwrap
               (lambda () (list (finish-activity 99))))))
 
-   (lambda (activity)
+   (lambda (activity arg)
      (activity-layout activity))
+   (lambda (activity arg) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
-   (lambda (activity) '())
-   (lambda (activity) '()))
+   (lambda (activity requestcode resultcode) '()))
 
   )

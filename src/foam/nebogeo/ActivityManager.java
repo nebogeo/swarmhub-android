@@ -40,7 +40,7 @@ public class ActivityManager
         m_Activities.put(name,actclass);
     }
 
-    static public void StartActivity(Activity src, String name, int requestcode)
+    static public void StartActivity(Activity src, String name, int requestcode, String arg)
     {
         Class ActClass = m_Activities.get(name);
         if (ActClass == null)
@@ -50,6 +50,7 @@ public class ActivityManager
         else
         {
             Intent intent = new Intent(src,ActClass);
+            intent.putExtra("arg", arg);
             src.startActivityForResult(intent, requestcode);
         }
     }

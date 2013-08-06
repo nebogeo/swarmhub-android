@@ -268,7 +268,7 @@
 (define (drawlist-line colour width points) (list "line" colour width points))
 
 (define (toast msg) (list "toast" 0 "toast" msg))
-(define (start-activity act request) (list "start-activity" 0 "start-activity" act request))
+(define (start-activity act request arg) (list "start-activity" 0 "start-activity" act request arg))
 (define (finish-activity result) (list "finish-activity" 0 "finish-activity" result))
 
 (define (update-widget type id token value) (list type id token value))
@@ -295,7 +295,6 @@
      (existing existing)
      (else
       (set! id-map (cons (list name current-id) id-map))
-      (display name)(display "=")(display current-id)(newline)
       (set! current-id (+ current-id 1))
       (get-id name)))))
 
@@ -336,6 +335,19 @@
       (if ret ret (widget-find (cdr widget-list) id))))
    (else (widget-find (cdr widget-list) id))))
 
+;(define (widget-modify fn id widget-list)
+;  (display widget-list)(newline)
+;  (cond
+;   ((null? widget-list) '())
+;   ((eqv? (widget-id (car widget-list)) id) (fn (car widget-list)))
+;   ((equal? (widget-type (car widget-list)) "linear-layout")
+;    (cons
+;     (widget-modify fn id (linear-layout-children (car widget-list)))
+;     (widget-modify fn id (cdr widget-list))))
+;   (else
+;    (cons (car widget-list) (widget-modify fn id (cdr widget-list))))))
+
+
 (define root 0)
 (define dynamic-widgets '())
 
@@ -349,18 +361,19 @@
 
 ;; called by java
 (define (activity-callback type activity-name args)
+  (display "activity-callback ")(display args)(newline)
   (let ((activity (activity-list-find root activity-name)))
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
         (let ((ret (cond
                     ;; todo update activity...?
-                    ((eq? type 'on-create) ((activity-on-create activity) activity))
-                    ((eq? type 'on-start) ((activity-on-start activity) activity))
+                    ((eq? type 'on-create) ((activity-on-create activity) activity (car args)))
+                    ((eq? type 'on-start) ((activity-on-start activity) activity (car args)))
                     ((eq? type 'on-stop) ((activity-on-stop activity) activity))
                     ((eq? type 'on-resume) ((activity-on-resume activity) activity))
                     ((eq? type 'on-pause) ((activity-on-pause activity) activity))
                     ((eq? type 'on-destroy) ((activity-on-destroy activity) activity))
-                    ((eq? type 'on-activity-result) ((activity-on-activity-result activity) activity))
+                    ((eq? type 'on-activity-result) ((activity-on-activity-result activity) activity (car args) (cadr args)))
                     (else
                      (display "no callback called ")(display type)(newline)
                      '()))))
