@@ -24,6 +24,7 @@ import android.util.Log;
 import android.content.Context;
 import android.view.ViewGroup;
 import android.view.View;
+import android.graphics.Typeface;
 
 
 import org.json.JSONException;
@@ -35,6 +36,7 @@ public class StarwispActivity extends Activity
     public String m_Name;
     static public Scheme m_Scheme;
     static public StarwispBuilder m_Builder;
+    public Typeface m_Typeface;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -50,6 +52,8 @@ public class StarwispActivity extends Activity
 
         String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" (list \""+arg+"\"))");
         View root = findViewById(R.id.main);
+
+        m_Typeface = Typeface.createFromAsset(getAssets(), "fonts/grobold.ttf");
 
         try {
             m_Builder.Build(this, new JSONArray(json), (ViewGroup) root);

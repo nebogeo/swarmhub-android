@@ -155,7 +155,11 @@
 (define (event-nutrients e) (list-ref e 2))
 
 (define (field name soil crop)
-  (list name soil crop (list (event "Cattle Slurry" (list 12 12 12) (list 1 2 3)))))
+  (list name soil crop '()))
+
+(define (empty-field)
+  (field "" "" "" '()))
+
 (define (field-name f) (list-ref f 0))
 (define (field-modify-name f v) (list-replace f 0 v))
 (define (field-soil f) (list-ref f 1))
@@ -327,7 +331,7 @@
            (let* ((last-point (car r))
                   (points-list (cadr r))
                   (x (* (length points-list) 30))
-                  (y (list-ref (event-nutrients event) n)))
+                  (y (- 200 (list-ref (event-nutrients event) n))))
              (list
               (list x y)
               (cons (drawlist-line colour
@@ -399,7 +403,7 @@
   (activity
    "main"
     (vert
-     (text-view (make-id "title") "Swarm Hub App" 40 fillwrap)
+     (text-view (make-id "title") "Farm Crap App" 40 fillwrap)
      (text-view (make-id "title") "Your fields" 30 fillwrap)
      (linear-layout
       (make-id "main-field-list")
@@ -429,7 +433,7 @@
   (activity
    "calc"
     (vert
-     (text-view (make-id "title") "Crapp Calculator" 40 fillwrap)
+     (text-view (make-id "title") "Crap Calculator" 40 fillwrap)
 
      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
      (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
@@ -557,6 +561,7 @@
                (list (start-activity "fieldcalc" 2 ""))))
      (button (make-id "delete") "Delete" 20 fillwrap
              (lambda ()
+;;               (mutate-current-field! (lambda (f) (empty-field)))
                (mutate-saved-data!
                 (lambda (d)
                   (saved-data-modify-fields

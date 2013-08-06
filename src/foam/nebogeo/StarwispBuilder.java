@@ -161,6 +161,7 @@ public class StarwispBuilder
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 parent.addView(v);
             }
 
@@ -170,6 +171,7 @@ public class StarwispBuilder
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 final String fn = arr.getString(5);
                 v.setSingleLine(true);
 /*                v.setOnClickListener(new View.OnClickListener() {
@@ -202,6 +204,7 @@ public class StarwispBuilder
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 final String fn = arr.getString(5);
                 v.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View v) {
@@ -243,7 +246,14 @@ public class StarwispBuilder
                 ArrayAdapter spinnerArrayAdapter =
                     new ArrayAdapter<String>(ctx,
                                              android.R.layout.simple_spinner_item,
-                                             spinnerArray);
+                                             spinnerArray) {
+                    public View getView(int position, View convertView,ViewGroup parent) {
+                        View v = super.getView(position, convertView, parent);
+                        ((TextView) v).setTypeface(((StarwispActivity)ctx).m_Typeface);
+                        return v;
+                    }
+                };
+
                 v.setAdapter(spinnerArrayAdapter);
                 v.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     public void onItemSelected(AdapterView<?> a, View v, int pos, long id) {
@@ -454,7 +464,14 @@ public class StarwispBuilder
                     ArrayAdapter spinnerArrayAdapter =
                         new ArrayAdapter<String>(ctx,
                                                  android.R.layout.simple_spinner_item,
-                                                 spinnerArray);
+                                                 spinnerArray) {
+                        public View getView(int position, View convertView,ViewGroup parent) {
+                            View v = super.getView(position, convertView, parent);
+                            ((TextView) v).setTypeface(((StarwispActivity)ctx).m_Typeface);
+                            return v;
+                        }
+                    };
+
                     v.setAdapter(spinnerArrayAdapter);
 
                     final int wid = id;
