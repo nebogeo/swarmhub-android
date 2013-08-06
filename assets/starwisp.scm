@@ -186,14 +186,16 @@
   (list fields))
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
-;(define (saved-data-modify-field fn name f)
-;  (saved-data-modify-fields
-;   f
-;   (map
-;    (lambda (field)
-;      (if (equal? (field-name f) name)
-;          (fn field) field))
-;    (saved-data-fields f))))
+
+(define (saved-data-modify-field fn name f)
+  (saved-data-modify-fields
+   f
+   (map
+    (lambda (field)
+      (if (equal? (field-name field) name)
+          (fn field)
+          field))
+    (saved-data-fields f))))
 
 (define (fields-remove-field f name)
   (filter
@@ -252,11 +254,23 @@
 (define (mutate-state! fn)
   (set! gstate (fn gstate)))
 
+(define (mutate-saved-data! fn)
+  (mutate-state!
+   (lambda (s)
+     (state-modify-saved-data
+      s fn))))
+
+
 (define (get-fields)
   (saved-data-fields (state-saved-data gstate)))
 
 (define (current-field)
   (state-field gstate))
+
+(define (mutate-current-field! fn)
+  (mutate-state!
+   (lambda (s)
+     (state-modify-field s (fn (state-field s))))))
 
 (define (find-field name)
   (define (_ f)
@@ -328,7 +342,8 @@
           (make-id (field-name field))
           (field-name field)
           20 fillwrap
-          (lambda () (list (start-activity "field" 2 (field-name field))))))
+          (lambda ()
+            (list (start-activity "field" 2 (field-name field))))))
        (get-fields))))
 
 (define (build-events)
@@ -477,13 +492,11 @@
       (horiz
        (button (make-id "save") "Save" 20 fillwrap
                (lambda ()
-                 (mutate-state!
-                  (lambda (s)
-                    (state-modify-saved-data
-                     s (lambda (d)
-                         (saved-data-modify-fields
-                          d (cons (state-field s)
-                                  (saved-data-fields d)))))))
+                 (mutate-saved-data!
+                  (lambda (d)
+                    (saved-data-modify-fields
+                     d (cons (current-field)
+                             (saved-data-fields d)))))
                  (list (finish-activity 99))))
        (button (make-id "cancel") "Cancel" 20 fillwrap
                (lambda () (list (finish-activity 99)))))
@@ -523,15 +536,13 @@
                (list (start-activity "fieldcalc" 2 ""))))
      (button (make-id "delete") "Delete" 20 fillwrap
              (lambda ()
-               (mutate-state!
-                (lambda (s)
-                  (state-modify-saved-data
-                   s (lambda (d)
-                       (saved-data-modify-fields
-                        d
-                        (fields-remove-field
-                         (get-fields)
-                         (field-name (state-field s))))))))
+               (mutate-saved-data!
+                (lambda (d)
+                  (saved-data-modify-fields
+                   d
+                   (fields-remove-field
+                    (get-fields)
+                    (field-name (current-field))))))
                (list (finish-activity 99))))
      (button (make-id "back") "Back" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
@@ -540,17 +551,20 @@
       (activity-layout activity))
     (lambda (activity arg)
       ;; load up into the current field
-      (mutate-state!
-       (lambda (s)
-         (state-modify-field
-          s (find-field arg))))
+      (mutate-current-field! (lambda (f) (find-field arg)))
       (list
-       (update-widget 'text-view (get-id "field-title") 'text arg)))
+       (update-widget 'text-view (get-id "field-title") 'text arg)
+       (update-widget 'linear-layout (get-id "field-events-list") 'contents
+                      (build-events))))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
-    (lambda (activity requestcode resultcode) '()))
+    (lambda (activity requestcode resultcode)
+      (display "HWWLWLLWLWLWLWLW")(newline)
+      (list
+       (update-widget 'linear-layout (get-id "field-events-list") 'contents
+                      (build-events)))))
 
   (activity
    "fieldcalc"
@@ -623,22 +637,21 @@
       (button (make-id "save") "Save" 20 fillwrap
               (lambda ()
 
-;                 (mutate-state!
-;                  (lambda (s)
-;                    (state-modify-saved-data
-;                     s (lambda (d)
+                (mutate-current-field!
+                 (lambda (field)
+                   (field-add-event
+                    field
+                    (event (calc-type (state-calc gstate))
+                           (list 1 1 1)
+                           (calc-nutrients)))))
 
-;                         (saved-data-modify-field
-;                          (lambda (field)
-;                            (display (field-add-event
-;                             field
-;                             (event (list 1 1 1)
-;                                    (calc-type (state-calc gstate))
-;                                    (calc-nutrients))))(newline)
-;                            field)
-;                          (field-name (current-field))
-;                          (saved-data-fields d))))
-;                    s))
+                (mutate-saved-data!
+                 (lambda (d)
+                   (saved-data-modify-field
+                    (lambda (field)
+                      (current-field))
+                      (field-name (current-field))
+                    d)))
 
                 (list (finish-activity 99))))
       (button (make-id "cancel") "Cancel" 20 fillwrap
