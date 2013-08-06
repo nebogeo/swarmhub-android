@@ -170,7 +170,7 @@
 
 (define (state)
   (list
-   (calc pig 25 "2" "autumn" normal mediumheavy)
+   (calc pig 25 "2" autumn normal mediumheavy)
    (field "" "" "")
    (saved-data-load)))
 
@@ -223,18 +223,18 @@
 (define (calc-soil s) (list-ref s 5))
 (define (calc-modify-soil s v) (list-replace s 5 v))
 
-(define (update-calc! fn)
+(define (update-calc! pre fn)
   (mutate-state!
    (lambda (s)
      (state-modify-calc s (fn (state-calc s)))))
-  (run-calc))
+  (run-calc pre))
 
-(define (update-type! v) (update-calc! (lambda (c) (calc-modify-type c v))))
-(define (update-amount! v) (update-calc! (lambda (c) (calc-modify-amount c v))))
-(define (update-quality! v) (update-calc! (lambda (c) (calc-modify-quality c v))))
-(define (update-season! v) (update-calc! (lambda (c) (calc-modify-season c v))))
-(define (update-crop! v) (update-calc! (lambda (c) (calc-modify-crop c v))))
-(define (update-soil! v) (update-calc! (lambda (c) (calc-modify-soil c v))))
+(define (update-type! pre v) (update-calc! pre (lambda (c) (calc-modify-type c v))))
+(define (update-amount! pre v) (update-calc! pre (lambda (c) (calc-modify-amount c v))))
+(define (update-quality! pre v) (update-calc! pre (lambda (c) (calc-modify-quality c v))))
+(define (update-season! pre v) (update-calc! pre (lambda (c) (calc-modify-season c v))))
+(define (update-crop! pre v) (update-calc! pre (lambda (c) (calc-modify-crop c v))))
+(define (update-soil! pre v) (update-calc! pre (lambda (c) (calc-modify-soil c v))))
 
 (define gstate (state))
 
@@ -256,21 +256,25 @@
      (else (_ (cdr f)))))
   (_ (get-fields)))
 
-(define (run-calc)
+(define (run-calc prepend)
   (let* ((type (calc-type (state-calc gstate)))
          (amount (calc-amount (state-calc gstate)))
          (quality (calc-quality (state-calc gstate)))
          (season (calc-season (state-calc gstate)))
          (crop (calc-crop (state-calc gstate)))
          (soil (calc-soil (state-calc gstate)))
+
          (amounts (get-nutrients type amount quality season crop soil)))
     (list
-     (update-widget 'text-view (get-id "camount-value") 'text
+     (update-widget 'text-view (get-id (string-append prepend "amount-value")) 'text
                     (string-append (number->string amount) " "
                                    (nutrients-units (find type nutrients-metric))))
-     (update-widget 'text-view (get-id "cna") 'text (number->string (list-ref amounts 0)))
-     (update-widget 'text-view (get-id "cpa") 'text (number->string (list-ref amounts 1)))
-     (update-widget 'text-view (get-id "cka") 'text (number->string (list-ref amounts 2))))))
+     (update-widget 'text-view (get-id (string-append prepend "na"))
+                    'text (number->string (list-ref amounts 0)))
+     (update-widget 'text-view (get-id (string-append prepend "pa"))
+                    'text (number->string (list-ref amounts 1)))
+     (update-widget 'text-view (get-id (string-append prepend "ka"))
+                    'text (number->string (list-ref amounts 2))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,6 +320,14 @@
                          (event-date event))
           15 fillwrap))
        (field-events (current-field)))))
+
+(define (date->string d)
+  (string-append
+   (number->string (list-ref d 0))
+   "/"
+   (number->string (list-ref d 1))
+   "/"
+   (number->string (list-ref d 2))))
 
 (define-activity-list
   (activity
@@ -363,31 +375,31 @@
                                  ((equal? v pig) (list "2" "4" "6"))
                                  ((equal? v poultry) (list "layer" "broiler"))
                                  ((equal? v FYM) (list "fresh" "other"))))
-                 (update-type! v))))
+                 (update-type! "c" v))))
 
      (horiz
       (vert
        (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
        (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
-               (lambda (v) (update-soil! v))))
+               (lambda (v) (update-soil! "c" v))))
       (vert
        (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
        (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
-                (lambda (v) (update-crop! v)))))
+                (lambda (v) (update-crop! "c" v)))))
 
      (horiz
       (vert
        (text-view (make-id "season-text") "Season" 15 fillwrap)
        (spinner (make-id "season") (list autumn winter spring summer) fillwrap
-               (lambda (v) (update-season! v))))
+               (lambda (v) (update-season! "c" v))))
       (vert
        (text-view (make-id "quality-text") "Quality" 15 fillwrap)
        (spinner (make-id "cquality") (list "2" "4" "6") fillwrap
-                (lambda (v) (update-quality! v)))))
+                (lambda (v) (update-quality! "c" v)))))
 
      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
      (seek-bar (make-id "amount") 100 fillwrap
-               (lambda (v) (update-amount! v)))
+               (lambda (v) (update-amount! "c" v)))
 
      (text-view (make-id "camount-value") "4500 gallons" 15 fillwrap)
      ;;      (image-view (make-id "example") "test" wrap)
@@ -484,7 +496,12 @@
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-events))
      (button (make-id "event") "New spreading event" 20 fillwrap
-             (lambda () (list (start-activity "fieldcalc" 2 ""))))
+             (lambda ()
+               (update-soil! "fc" (field-soil (current-field)))
+               (update-crop! "fc" (field-crop (current-field)))
+               ;; todo from date
+               (update-season! "fc" winter)
+               (list (start-activity "fieldcalc" 2 ""))))
      (button (make-id "back") "Delete" 20 fillwrap
              (lambda ()
                (mutate-state!
@@ -503,13 +520,11 @@
     (lambda (activity arg)
       (activity-layout activity))
     (lambda (activity arg)
-
       ;; load up into the current field
       (mutate-state!
        (lambda (s)
          (state-modify-field
           s (find-field arg))))
-
       (list
        (update-widget 'text-view (get-id "field-title") 'text arg)))
     (lambda (activity) '())
@@ -520,66 +535,91 @@
 
   (activity
    "fieldcalc"
-    (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
-     (list
-      (text-view (make-id "title") "Long Meadow" 40 fillwrap)
-      (text-view (make-id "title") "New spreading event" 30 fillwrap)
-      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
-      (spinner (make-id "manure") (list "Cattle slurry" "Farmyard manure" "Pig slurry" "Poultry litter") fillwrap
-               (lambda (v) (list)))
-      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
-      (seek-bar (make-id "amount") 100 fillwrap
-                (lambda (v) (list)))
-      (text-view (make-id "amount-value") "4500 gallons" 15 fillwrap)
-      (canvas (make-id "graph")
-              (layout 'fill-parent 100 1 'centre)
-              (list
-               (drawlist-line '(255 127 127) 2 '(0 100 100 50))
-               (drawlist-line '(255 127 127) 2 '(100 50 200 75))
-               (drawlist-line '(255 127 127) 2 '(200 75 300 20))
-               (drawlist-line '(127 255 127) 2 '(0 100 100 55))
-               (drawlist-line '(127 255 127) 2 '(100 55 200 70))
-               (drawlist-line '(127 255 127) 2 '(200 70 300 25))
-               (drawlist-line '(127 127 255) 2 '(0 100 100 60))
-               (drawlist-line '(127 127 255) 2 '(100 60 200 55))
-               (drawlist-line '(127 127 255) 2 '(200 55 300 34))
-               ))
-      (image-view (make-id "example") "testhalf" wrap)
-      (button (make-id "camera") "Camera" 20 fillwrap
-              (lambda () (list (start-activity "camera" 2 ""))))
-      (linear-layout
-       (make-id "upper-out")
-       'horizontal
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (text-view (make-id "nt") "N" 30 fillwrap)
-        (text-view (make-id "pt") "P" 30 fillwrap)
-        (text-view (make-id "kt") "K" 30 fillwrap)))
-      (linear-layout
-       (make-id "lower-out")
-       'horizontal
-       (layout 'fill-parent 'fill-parent 1 'left)
-       (list
-        (text-view (make-id "na") "12" 50 fillwrap)
-        (text-view (make-id "pa") "75" 50 fillwrap)
-        (text-view (make-id "ka") "55" 50 fillwrap)))
+    (vert
+     (text-view (make-id "fieldcalc-title") "field name" 40 fillwrap)
+     (horiz
+      (text-view (make-id "fc-date-text") (date->string (list 1 1 1)) 30 fillwrap)
+      (button (make-id "date") "Set date" 20 fillwrap
+              (lambda ()
+                (display "button function")(newline)
+                (list (date-picker-dialog
+                       "fieldcalc-date"
+                       (lambda (day month year)
+                         (list
+                          (update-widget 'text-view (make-id "fc-date-text") 'text
+                                         (date->string (list day month year))))))))))
 
-      (linear-layout
-       (make-id "out")
-       'horizontal
+     (horiz
+      (vert
+       (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
+       (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
+                (lambda (v)
+                  (cons
+                   (update-widget 'spinner (get-id "quality") 'array
+                                  (cond
+                                   ((equal? v cattle) (list "2" "6" "10"))
+                                   ((equal? v pig) (list "2" "4" "6"))
+                                   ((equal? v poultry) (list "layer" "broiler"))
+                                   ((equal? v FYM) (list "fresh" "other"))))
+                   (update-type! "fc" v)))))
+      (vert
+       (text-view (make-id "quality-text") "Quality" 15 fillwrap)
+       (spinner (make-id "quality") (list "2" "4" "6") fillwrap
+                (lambda (v) (update-quality! "fc" v)))))
+
+     (text-view (make-id "amount-text") "Amount" 15 fillwrap)
+     (seek-bar (make-id "amount") 100 fillwrap
+               (lambda (v)
+                 (update-amount! "fc" v)))
+     (text-view (make-id "fcamount-value") "4500 gallons" 15 fillwrap)
+;     (canvas (make-id "graph")
+;             (layout 'fill-parent 100 1 'centre)
+;             (list
+;              (drawlist-line '(255 127 127) 2 '(0 100 100 50))
+;              (drawlist-line '(255 127 127) 2 '(100 50 200 75))
+;              (drawlist-line '(255 127 127) 2 '(200 75 300 20))
+;              (drawlist-line '(127 255 127) 2 '(0 100 100 55))
+;              (drawlist-line '(127 255 127) 2 '(100 55 200 70))
+;              (drawlist-line '(127 255 127) 2 '(200 70 300 25))
+;              (drawlist-line '(127 127 255) 2 '(0 100 100 60))
+;              (drawlist-line '(127 127 255) 2 '(100 60 200 55))
+;              (drawlist-line '(127 127 255) 2 '(200 55 300 34))
+;              ))
+;     (image-view (make-id "example") "testhalf" wrap)
+     (button (make-id "camera") "Camera" 20 fillwrap
+             (lambda () (list (start-activity "camera" 2 ""))))
+     (linear-layout
+      (make-id "upper-out")
+      'horizontal
+      (layout 'fill-parent 'fill-parent 1 'left)
+      (list
+       (text-view (make-id "nt") "N" 30 fillwrap)
+       (text-view (make-id "pt") "P" 30 fillwrap)
+       (text-view (make-id "kt") "K" 30 fillwrap)))
+     (linear-layout
+      (make-id "lower-out")
+      'horizontal
        (layout 'fill-parent 'fill-parent 1 'left)
        (list
-        (button (make-id "save") "Save" 20 fillwrap
-                (lambda () (list (finish-activity 99))))
-        (button (make-id "cancel") "Cancel" 20 fillwrap
-                (lambda () (list (finish-activity 99))))))))
+        (text-view (make-id "fcna") "12" 30 fillwrap)
+        (text-view (make-id "fcpa") "75" 30 fillwrap)
+        (text-view (make-id "fcka") "55" 30 fillwrap)))
+
+     (linear-layout
+      (make-id "out")
+      'horizontal
+      (layout 'fill-parent 'fill-parent 1 'left)
+      (list
+       (button (make-id "save") "Save" 20 fillwrap
+               (lambda () (list (finish-activity 99))))
+       (button (make-id "cancel") "Cancel" 20 fillwrap
+               (lambda () (list (finish-activity 99)))))))
 
    (lambda (activity arg)
      (activity-layout activity))
-   (lambda (activity arg) '())
+   (lambda (activity arg)
+      (list
+       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field)))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())

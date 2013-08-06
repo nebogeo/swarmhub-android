@@ -44,6 +44,12 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.text.TextWatcher;
 import android.text.Editable;
+import android.widget.DatePicker;
+
+import android.app.TimePickerDialog;
+import android.app.DatePickerDialog;
+import android.text.format.DateFormat;
+import java.util.Calendar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -262,8 +268,6 @@ public class StarwispBuilder
                 parent.addView(v);
             }
 
-
-
         } catch (JSONException e) {
             Log.e("starwisp", "Error parsing data " + e.toString());
         }
@@ -286,7 +290,7 @@ public class StarwispBuilder
             Integer id = arr.getInt(1);
             String token = arr.getString(2);
 
-//            Log.i("starwisp", "Update: "+type+" "+id+" "+token);
+            Log.i("starwisp", "Update: "+type+" "+id+" "+token);
 
 
             // non widget commands
@@ -295,6 +299,53 @@ public class StarwispBuilder
                 msg.show();
                 return;
             }
+
+            if (token.equals("time-picker-dialog")) {
+
+                final Calendar c = Calendar.getInstance();
+                int hour = c.get(Calendar.HOUR_OF_DAY);
+                int minute = c.get(Calendar.MINUTE);
+
+                // Create a new instance of TimePickerDialog and return it
+                TimePickerDialog d=new TimePickerDialog(ctx, null, hour, minute,
+                                                        DateFormat.is24HourFormat(ctx));
+                d.show();
+
+                Log.i("starwisp", "attempt time picker");
+                return;
+            };
+
+            if (token.equals("date-picker-dialog")) {
+
+                final Calendar c = Calendar.getInstance();
+                int day = c.get(Calendar.DAY_OF_MONTH);
+                int month = c.get(Calendar.MONTH);
+                int year = c.get(Calendar.YEAR);
+
+                final String name = arr.getString(3);
+
+                // Create a new instance of TimePickerDialog and return it
+                DatePickerDialog d=new DatePickerDialog(
+                    ctx,
+                    new DatePickerDialog.OnDateSetListener() {
+                        public void onDateSet(DatePicker view, int year, int month, int day) {
+                            Log.i("starwisp","datepicked returned");
+                            try {
+                                String ret=m_Scheme.eval("(dialog-callback \""+
+                                                         name+"\" '("+day+" "+month+" "+year+"))");
+                                Log.i("starwisp",ret);
+                                UpdateList(ctx, new JSONArray(ret));
+                            } catch (JSONException e) {
+                                Log.e("starwisp", "Error parsing data " + e.toString());
+                            }
+                        }
+                    }, year, month, day);
+                d.show();
+
+                Log.i("starwisp", "attempt date picker");
+                return;
+            };
+
 
             if (token.equals("start-activity")) {
                 ActivityManager.StartActivity(ctx,arr.getString(3),arr.getInt(4),arr.getString(5));

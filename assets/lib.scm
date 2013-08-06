@@ -277,6 +277,15 @@
 (define (drawlist-line colour width points) (list "line" colour width points))
 
 (define (toast msg) (list "toast" 0 "toast" msg))
+
+(define (time-picker-dialog name fn)
+  (list "time-picker-dialog" 0 "time-picker-dialog" name fn))
+(define (date-picker-dialog name fn)
+  (list "date-picker-dialog" 0 "date-picker-dialog" name fn))
+(define (dialog-type d) (list-ref d 2))
+(define (dialog-name d) (list-ref d 3))
+(define (dialog-fn d) (list-ref d 4))
+
 (define (start-activity act request arg) (list "start-activity" 0 "start-activity" act request arg))
 (define (finish-activity result) (list "finish-activity" 0 "finish-activity" result))
 
@@ -367,6 +376,34 @@
           (list-ref event 3))))
    events))
 
+(define dialogs '())
+
+(define (dialog-find dl name)
+  (cond
+   ((null? dl) #f)
+   ((equal? (dialog-name (car dl)) name) (car dl))
+   (else (dialog-find (cdr dl) name))))
+
+(define (add-new-dialog! d)
+  ;; todo - when to clear out?
+  (when (not (dialog-find dialogs (dialog-name d)))
+        (display "adding dialog ")(display d)(newline)
+        (set! dialogs (cons d dialogs))))
+
+(define (update-dialogs! events)
+  (when (list? events)
+        (for-each
+         (lambda (event)
+           (when (equal? (list-ref event 0) "date-picker-dialog")
+                 (add-new-dialog! event)))
+         events)))
+
+(define (dialog-callback name args)
+  (let ((dialog (dialog-find dialogs name)))
+    (if (not dialog)
+        (begin (display "no dialog called ")(display name)(newline))
+        (send (scheme->json (apply (dialog-fn dialog) args))))))
+
 ;; called by java
 (define (activity-callback type activity-name args)
   ;;(display "activity-callback ")(display type)(display " ")(display args)(newline)
@@ -385,7 +422,8 @@
                     (else
                      (display "no callback called ")(display type)(newline)
                      '()))))
-          (when (not (eq? type 'on-create)) (update-dynamic-widgets! ret))
+          (when (not (eq? type 'on-create))
+                (update-dynamic-widgets! ret))
           (send (scheme->json ret))))))
 
 ;; called by java
@@ -397,17 +435,17 @@
           ;;(display "found widget")(newline)
           (if (not widget)
               (begin (display "no widget ")(display widget-id)(display " in ")(display activity-name)(newline))
-              (begin
-                (send (scheme->json
-                       (cond
-                        ((equal? (widget-type widget) "edit-text")
-                         ((edit-text-listener widget) (car args)))
-                        ((equal? (widget-type widget) "button")
-                         ((button-listener widget)))
-                        ((equal? (widget-type widget) "seek-bar")
-                         ((seek-bar-listener widget) (car args)))
-                        ((equal? (widget-type widget) "spinner")
-                         ((spinner-listener widget) (car args)))
-                        (else (display "no callbacks for type ")
-                              (display (widget-type widget))(newline))))))))))
-  )
+              (let ((events
+                     (cond
+                      ((equal? (widget-type widget) "edit-text")
+                       ((edit-text-listener widget) (car args)))
+                      ((equal? (widget-type widget) "button")
+                       ((button-listener widget)))
+                      ((equal? (widget-type widget) "seek-bar")
+                       ((seek-bar-listener widget) (car args)))
+                      ((equal? (widget-type widget) "spinner")
+                       ((spinner-listener widget) (car args)))
+                      (else (display "no callbacks for type ")
+                            (display (widget-type widget))(newline)))))
+                (update-dialogs! events)
+                (send (scheme->json events))))))))
