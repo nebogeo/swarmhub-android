@@ -432,7 +432,7 @@
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
         (let ((widget (widget-find (cons (activity-layout activity) dynamic-widgets) widget-id)))
-          ;;(display "found widget")(newline)
+          ;;(display widget)(newline)
           (if (not widget)
               (begin (display "no widget ")(display widget-id)(display " in ")(display activity-name)(newline))
               (let ((events
