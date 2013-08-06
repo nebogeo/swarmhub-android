@@ -321,26 +321,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (build-lines events colour n)
+  (cadr (foldl
+         (lambda (event r)
+           (let* ((last-point (car r))
+                  (points-list (cadr r))
+                  (x (* (length points-list) 30))
+                  (y (list-ref (event-nutrients event) n)))
+             (list
+              (list x y)
+              (cons (drawlist-line colour
+                                   2
+                                   (list (car last-point) (cadr last-point)
+                                         x y))
+                    points-list))))
+         (list (list 0 200) '())
+         events)))
+
 (define (build-graph)
-  (let ((events (field-events (current-field)))
-        (ret
-         ;; nitrogen
-         (cadr (foldl
-                (lambda (event r)
-                  (let ((last-point (car r))
-                        (points-list (cadr r))
-                        (x (* (length r) 10))
-                        (y (list-ref (event-nutrients event) 0)))
-                    (list
-                     (list x y)
-                     (cons (drawlist-line '(255 127 127)
-                                          2
-                                          (list (car last-point) (cadr last-point)
-                                                x y))
-                           points-list))))
-                events))))
-    (display ret)(newline)
-    ret))
+  (let ((events (field-events (current-field))))
+    (append
+     (build-lines events '(255 127 127) 0)
+     (build-lines events '(127 255 127) 1)
+     (build-lines events '(127 127 255) 2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
