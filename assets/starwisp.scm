@@ -263,7 +263,6 @@
      (state-modify-saved-data
       s fn))))
 
-
 (define (get-fields)
   (saved-data-fields (state-saved-data gstate)))
 
@@ -295,12 +294,12 @@
          (season (calc-season (state-calc gstate)))
          (crop (calc-crop (state-calc gstate)))
          (soil (calc-soil (state-calc gstate))))
-    (display type)(newline)
-    (display amount)(newline)
-    (display season)(newline)
-    (display quality)(newline)
-    (display crop)(newline)
-    (display soil)(newline)
+;    (display type)(newline)
+;    (display amount)(newline)
+;    (display season)(newline)
+;    (display quality)(newline)
+;    (display crop)(newline)
+;    (display soil)(newline)
 
     (get-nutrients type amount quality season crop soil)))
 
@@ -322,6 +321,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (build-graph)
+  (let ((events (field-events (current-field)))
+        (ret
+         ;; nitrogen
+         (cadr (foldl
+                (lambda (event r)
+                  (let ((last-point (car r))
+                        (points-list (cadr r))
+                        (x (* (length r) 10))
+                        (y (list-ref (event-nutrients event) 0)))
+                    (list
+                     (list x y)
+                     (cons (drawlist-line '(255 127 127)
+                                          2
+                                          (list (car last-point) (cadr last-point)
+                                                x y))
+                           points-list))))
+                events))))
+    (display ret)(newline)
+    ret))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -523,14 +542,7 @@
      (text-view (make-id "field-title") "Long Meadow" 40 fillwrap)
      (canvas (make-id "graph")
              (layout 'fill-parent 200 1 'centre)
-             (list
-              (drawlist-line '(255 127 127) 2 '(0 200 100 100))
-              (drawlist-line '(255 127 127) 2 '(100 100 200 150))
-              (drawlist-line '(127 255 127) 2 '(0 200 100 110))
-              (drawlist-line '(127 255 127) 2 '(100 110 200 140))
-              (drawlist-line '(127 127 255) 2 '(0 200 100 90))
-              (drawlist-line '(127 127 255) 2 '(100 90 200 110))
-              ))
+             (list))
      (text-view (make-id "events-txt") "Events" 20 fillwrap)
      (linear-layout
       (make-id "field-events-list")
@@ -561,7 +573,8 @@
       (list
        (update-widget 'text-view (get-id "field-title") 'text arg)
        (update-widget 'linear-layout (get-id "field-events-list") 'contents
-                      (build-events))))
+                      (build-events))
+       (update-widget 'canvas (get-id "graph") 'drawlist (build-graph))))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
