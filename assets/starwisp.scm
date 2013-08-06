@@ -148,15 +148,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define (event type date nutrients)
+  (list type date nutrients))
+(define (event-type e) (list-ref e 0))
+(define (event-date e) (list-ref e 1))
+(define (event-nutrients e) (list-ref e 2))
+
 (define (field name soil crop)
-  (list name soil crop))
+  (list name soil crop (list (event "Cattle Slurry" "12/12/12" (list 1 2 3)))))
 (define (field-name f) (list-ref f 0))
 (define (field-modify-name f v) (list-replace f 0 v))
 (define (field-soil f) (list-ref f 1))
 (define (field-modify-soil f v) (list-replace f 1 v))
 (define (field-crop f) (list-ref f 2))
 (define (field-modify-crop f v) (list-replace f 2 v))
+(define (field-events f) (list-ref f 3))
+(define (field-modify-events f v) (list-replace f 3 v))
 
+(define (field-add-event f event)
+  (field-modify-events f (cons event (field-events f))))
 
 (define (state)
   (list
@@ -234,6 +244,9 @@
 (define (get-fields)
   (saved-data-fields (state-saved-data gstate)))
 
+(define (current-field)
+  (state-field gstate))
+
 (define (find-field name)
   (define (_ f)
     (cond
@@ -290,6 +303,19 @@
           20 fillwrap
           (lambda () (list (start-activity "field" 2 (field-name field))))))
        (get-fields))))
+
+(define (build-events)
+  (if (null? (field-events (current-field)))
+      (list (text-view (make-id "temp") "No events yet" 15 fillwrap))
+      (map
+       (lambda (event)
+         (text-view
+          (make-id "ev")
+          (string-append (event-type event)
+                         " "
+                         (event-date event))
+          15 fillwrap))
+       (field-events (current-field)))))
 
 (define-activity-list
   (activity
@@ -452,9 +478,11 @@
               (drawlist-line '(127 127 255) 2 '(100 90 200 110))
               ))
      (text-view (make-id "events-txt") "Events" 20 fillwrap)
-     (vert
-      (text-view (make-id "ev1") "Pig slurry 10/07/13" 15 fillwrap)
-      (text-view (make-id "ev2") "Farmyard manure 06/06/13" 15 fillwrap))
+     (linear-layout
+      (make-id "field-events-list")
+      'vertical
+      (layout 'fill-parent 'fill-parent 1 'left)
+      (build-events))
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda () (list (start-activity "fieldcalc" 2 ""))))
      (button (make-id "back") "Delete" 20 fillwrap
