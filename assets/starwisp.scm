@@ -177,6 +177,12 @@
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
 
+;(define (fields-remove-field f name)
+;  (filter
+;   (lambda (field)
+;     (not (equal? name (field-name field))))
+;   f))
+
 (define (saved-data-save d)
   (let ((f (open-output-file "/sdcard/swarmhub-data.scm")))
     (write d f)
@@ -225,6 +231,17 @@
 (define (mutate-state! fn)
   (set! gstate (fn gstate)))
 
+(define (get-fields)
+  (saved-data-fields (state-saved-data gstate)))
+
+(define (find-field name)
+  (define (_ f)
+    (cond
+     ((null? f) #f)
+     ((equal? (field-name (car f)) name) f)
+     (else (find-field (cdr f)))))
+  (_ (get-fields)))
+
 (define (run-calc)
   (let* ((type (calc-type (state-calc gstate)))
          (amount (calc-amount (state-calc gstate)))
@@ -262,14 +279,17 @@
    l))
 
 (define (build-field-buttons)
-  (map
-   (lambda (field)
-     (button
-      (make-id (field-name field))
-      (field-name field)
-      20 fillwrap
-      (lambda () (list (start-activity "field" 2 (field-name field))))))
-   (saved-data-fields (state-saved-data gstate))))
+  (display "build-field-buttons")(newline)
+  (if (null? (get-fields))
+      (list (text-view (make-id "temp") "Add some fields" 20 fillwrap))
+      (map
+       (lambda (field)
+         (button
+          (make-id (field-name field))
+          (field-name field)
+          20 fillwrap
+          (lambda () (list (start-activity "field" 2 (field-name field))))))
+       (get-fields))))
 
 (define-activity-list
   (activity
@@ -278,7 +298,7 @@
      (text-view (make-id "title") "Swarm Hub App" 40 fillwrap)
      (text-view (make-id "title") "Your fields" 30 fillwrap)
      (linear-layout
-      (make-id "fields")
+      (make-id "main-field-list")
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-field-buttons))
@@ -291,20 +311,15 @@
      (button (make-id "f2") "Calculator" 20 fillwrap
              (lambda () (list (start-activity "calc" 2 "")))))
    (lambda (activity arg)
-     (display "on create")(newline)
      (activity-layout activity))
    (lambda (activity arg) '())
-   (lambda (activity)
-     (display "on resume")(newline)
-     (list
-      (update-widget 'linear-layout (get-id "fields") 'contents
-                     (build-field-buttons))))
+   (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity requestcode resultcode)
      (list
-      (update-widget 'linear-layout (get-id "fields") 'contents
+      (update-widget 'linear-layout (get-id "main-field-list") 'contents
                      (build-field-buttons)))))
 
   (activity
@@ -401,7 +416,6 @@
       (horiz
        (button (make-id "save") "Save" 20 fillwrap
                (lambda ()
-                 (display (state-field gstate))(newline)
                  (mutate-state!
                   (lambda (s)
                     (state-modify-saved-data
@@ -443,13 +457,31 @@
       (text-view (make-id "ev2") "Farmyard manure 06/06/13" 15 fillwrap))
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda () (list (start-activity "fieldcalc" 2 ""))))
+;     (button (make-id "back") "Delete" 20 fillwrap
+;             (lambda ()
+;               (mutate-state!
+;                (lambda (s)
+;                  (state-modify-saved-data
+;                   s (lambda (d)
+;                       (saved-data-modify-fields
+;                        d
+;                        (fields-remove-field
+;                         (saved-data-fields d)))))))
+;               (list (finish-activity 99))))
      (button (make-id "back") "Back" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
 
     (lambda (activity arg)
       (activity-layout activity))
     (lambda (activity arg)
-      (display "on-start")(newline)
+
+      ;; load up into the current field
+;      (mutate-state!
+;       (lambda (s)
+;         (display (find-field arg))(newline)
+;         (state-modify-field
+;          s (find-field arg))))
+
       (list
        (update-widget 'text-view (get-id "field-title") 'text arg)))
     (lambda (activity) '())

@@ -127,14 +127,11 @@ public class StarwispBuilder
         try {
             String type = arr.getString(0);
 
-            Log.i("starwisp","Building: "+type);
-
             if (type.equals("linear-layout")) {
                 LinearLayout v = new LinearLayout(ctx);
                 v.setId(arr.getInt(1));
                 v.setOrientation(BuildOrientation(arr.getString(2)));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
-                Log.i("starwisp","Linear layout, "+arr.getJSONArray(4).length()+" children");
                 parent.addView(v);
                 JSONArray children = arr.getJSONArray(4);
                 for (int i=0; i<children.length(); i++) {
@@ -154,7 +151,6 @@ public class StarwispBuilder
 
             if (type.equals("text-view")) {
                 TextView v = new TextView(ctx);
-                Log.i("starwisp","text view id: "+arr.getInt(1));
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
@@ -196,7 +192,6 @@ public class StarwispBuilder
 
             if (type.equals("button")) {
                 Button v = new Button(ctx);
-                Log.i("starwisp","building button "+arr.getInt(1));
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
@@ -208,8 +203,6 @@ public class StarwispBuilder
                     }
                 });
                 parent.addView(v);
-
-                Log.i("starwisp","button added to "+ctx);
             }
 
             if (type.equals("seek-bar")) {

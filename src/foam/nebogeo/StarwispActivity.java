@@ -51,13 +51,10 @@ public class StarwispActivity extends Activity
         String json = m_Scheme.eval("(activity-callback 'on-create \""+m_Name+"\" '("+arg+"))");
         View root = findViewById(R.id.main);
 
-        Log.i("starwisp", root.toString());
-        Log.i("starwisp", json);
-
         try {
             m_Builder.Build(this, new JSONArray(json), (ViewGroup) root);
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+json+"] " + e.toString());
         }
     }
 
@@ -76,7 +73,7 @@ public class StarwispActivity extends Activity
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
     }
 
@@ -86,9 +83,10 @@ public class StarwispActivity extends Activity
         super.onResume();
         String ret=m_Scheme.eval("(activity-callback 'on-resume \""+m_Name+"\" '())");
         try {
+            Log.i("starwisp","IN RESUME===="+ret);
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
     }
 
@@ -101,7 +99,7 @@ public class StarwispActivity extends Activity
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
     }
 
@@ -113,7 +111,7 @@ public class StarwispActivity extends Activity
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
     }
 
@@ -125,7 +123,7 @@ public class StarwispActivity extends Activity
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
     }
 
@@ -134,7 +132,7 @@ public class StarwispActivity extends Activity
         try {
             m_Builder.UpdateList(this, new JSONArray(ret));
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+ret+"] " + e.toString());
         }
 	}
 }

@@ -169,7 +169,7 @@
    ((boolean? v) (if v "true" "false"))
    ((list? v)
     (cond
-     ((null? v) "null")
+     ((null? v) "[]")
      (else
       ; if it quacks like an assoc list...
       (if (and (not (null? v)) (not (list? (car v))) (pair? (car v)))
@@ -335,19 +335,6 @@
       (if ret ret (widget-find (cdr widget-list) id))))
    (else (widget-find (cdr widget-list) id))))
 
-;(define (widget-modify fn id widget-list)
-;  (display widget-list)(newline)
-;  (cond
-;   ((null? widget-list) '())
-;   ((eqv? (widget-id (car widget-list)) id) (fn (car widget-list)))
-;   ((equal? (widget-type (car widget-list)) "linear-layout")
-;    (cons
-;     (widget-modify fn id (linear-layout-children (car widget-list)))
-;     (widget-modify fn id (cdr widget-list))))
-;   (else
-;    (cons (car widget-list) (widget-modify fn id (cdr widget-list))))))
-
-
 (define root 0)
 (define dynamic-widgets '())
 
@@ -357,11 +344,24 @@
 ;; hack for dynamic widgets
 (define (add-new-widget! w)
   ;; todo - when to clear out?
-  (set! dynamic-widgets (cons w dynamic-widgets)))
+  (when (not (widget-find dynamic-widgets (widget-id w)))
+        (display "adding widget ")(display w)(newline)
+        (set! dynamic-widgets (cons w dynamic-widgets))))
+
+(define (update-dynamic-widgets! events)
+  (display events)(newline)
+  (for-each
+   (lambda (event)
+     (if (equal? (list-ref event 2) 'contents)
+         (for-each
+          (lambda (w)
+            (add-new-widget! w))
+          (list-ref event 3))))
+   events))
 
 ;; called by java
 (define (activity-callback type activity-name args)
-  (display "activity-callback ")(display args)(newline)
+  ;;(display "activity-callback ")(display type)(display " ")(display args)(newline)
   (let ((activity (activity-list-find root activity-name)))
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
@@ -377,6 +377,7 @@
                     (else
                      (display "no callback called ")(display type)(newline)
                      '()))))
+          (when (not (eq? type 'on-create)) (update-dynamic-widgets! ret))
           (send (scheme->json ret))))))
 
 ;; called by java
@@ -384,8 +385,8 @@
   (let ((activity (activity-list-find root activity-name)))
     (if (not activity)
         (begin (display "no activity called ")(display activity-name)(newline))
-        (let ((widget (widget-find (list (activity-layout activity) dynamic-widgets) widget-id)))
-          (display "found widget")(newline)
+        (let ((widget (widget-find (cons (activity-layout activity) dynamic-widgets) widget-id)))
+          ;;(display "found widget")(newline)
           (if (not widget)
               (begin (display "no widget ")(display widget-id)(display " in ")(display activity-name)(newline))
               (begin
