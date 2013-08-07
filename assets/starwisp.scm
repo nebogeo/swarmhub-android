@@ -225,7 +225,7 @@
 (define (field-modify-events f v) (list-replace f 3 v))
 
 (define (field-add-event f event)
-  (field-modify-events f (cons event (field-events f))))
+  (field-modify-events f (append (field-events f) (list event))))
 
 (define (field-remove-event f id)
   (field-modify-events
@@ -663,8 +663,7 @@
                  (mutate-saved-data!
                   (lambda (d)
                     (saved-data-modify-fields
-                     d (cons (current-field)
-                             (saved-data-fields d)))))
+                     d (append (saved-data-fields d) (list (current-field))))))
                  (list (finish-activity 99))))
        (button (make-id "cancel") "Cancel" 20 fillwrap
                (lambda () (list (finish-activity 99)))))
@@ -756,12 +755,7 @@
                          (mutate-state!
                           (lambda (s)
                             (state-modify-date s (list day (+ month 1) year))))
-
-                         (display "date is :")(display (current-date))(newline)
-                         (display "season is :")(display (date->season (current-date)))(newline)
                          (update-season! "fc" (date->season (current-date)))
-
-
                          (list
                           (update-widget 'text-view (make-id "fc-date-text") 'text
                                          (date->string (list day (+ month 1) year))))))))))
@@ -808,8 +802,8 @@
         (text-view (make-id "fcka") "55" 30 fillwrap))
 
      (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
-     (button (make-id "camera") "Camera" 20 fillwrap
-             (lambda () (list (start-activity "camera" 2 ""))))
+;;     (button (make-id "camera") "Camera" 20 fillwrap
+;;             (lambda () (list (start-activity "camera" 2 ""))))
 
      (horiz
       (button (make-id "save") "Save" 20 fillwrap
@@ -848,9 +842,6 @@
    (lambda (activity arg)
      (update-soil! "fc" (field-soil (current-field)))
      (update-crop! "fc" (field-crop (current-field)))
-
-     (display "date is :")(display (current-date))(newline)
-     (display "season is :")(display (date->season (current-date)))(newline)
      (update-season! "fc" (date->season (current-date)))
      (list
       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field)))))
@@ -895,21 +886,14 @@
       (list
        (button (make-id "load-gallery") "Load Gallery" 20 fillwrap
                (lambda ()
-                 (display "button cb")(newline)
-                 (display (event-id (current-event)))(newline)
-
                  (let ((path (string-append
                               (field-name (current-field)) "-"
                               (number->string (event-id (current-event))) "/")))
-                   (display path)(newline)
                    (list
                     (list-files
                      (string-append "filelister-" path)
                      path
                      (lambda (images)
-                       (display "filelister cb")(newline)
-                       (display path)(newline)
-                       (display images)(newline)
                        (list
                         (update-widget
                          'linear-layout (get-id "gallery") 'contents
@@ -969,8 +953,6 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
-     (display "on start")(newline)
-     (display (event-id (current-event)))(newline)
      (list
       (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
       (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
