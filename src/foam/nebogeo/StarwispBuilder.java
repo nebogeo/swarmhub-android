@@ -21,6 +21,8 @@ import android.app.Activity;
 import android.util.Log;
 import android.content.Context;
 import android.graphics.Color;
+import java.io.File;
+import java.io.FileOutputStream;
 
 import java.io.IOException;
 import java.io.BufferedReader;
@@ -46,10 +48,17 @@ import android.view.KeyEvent;
 import android.text.TextWatcher;
 import android.text.Editable;
 import android.widget.DatePicker;
+import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera;
+import java.io.FileNotFoundException;
+import java.util.TimeZone;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.text.DateFormat;
 
 import android.app.TimePickerDialog;
 import android.app.DatePickerDialog;
-import android.text.format.DateFormat;
 import java.util.Calendar;
 
 import org.json.JSONException;
@@ -333,13 +342,18 @@ public class StarwispBuilder
                 int minute = c.get(Calendar.MINUTE);
 
                 // Create a new instance of TimePickerDialog and return it
-                TimePickerDialog d=new TimePickerDialog(ctx, null, hour, minute,
-                                                        DateFormat.is24HourFormat(ctx));
+                TimePickerDialog d=new TimePickerDialog(ctx, null, hour, minute, true);
                 d.show();
 
                 Log.i("starwisp", "attempt time picker");
                 return;
             };
+
+            if (token.equals("make-directory")) {
+                File file = new File(((StarwispActivity)ctx).m_AppDir+arr.getString(3));
+                file.mkdirs();
+                return;
+            }
 
             if (token.equals("date-picker-dialog")) {
 
@@ -469,11 +483,37 @@ public class StarwispBuilder
 
             if (type.equals("camera-preview")) {
                 Log.i("starwisp","camera update");
-                CameraPreview v = (CameraPreview)vv;
+                final CameraPreview v = (CameraPreview)vv;
+
+                if (token.equals("take-picture")) {
+                    final String path = ((StarwispActivity)ctx).m_AppDir+arr.getString(3);
+
+                    v.TakePicture(
+                        new PictureCallback() {
+                            public void onPictureTaken(byte[] data, Camera camera) {
+
+                                Log.i("starwisp", "callback returns");
+
+                                String datetime = getDateTime();
+                                String filename = path+datetime + ".jpg";
+
+                                Log.i("starwisp", filename);
+                                SaveData(filename,data);
+
+                                v.Shutdown();
+                                ctx.finish();
+
+                            }
+                        });
+                }
+
                 if (token.equals("shutdown")) {
                     Log.i("starwisp","shutting down camera");
                     v.Shutdown();
                 }
+
+
+
                 return;
             }
 
@@ -522,4 +562,30 @@ public class StarwispBuilder
             Log.e("starwisp", "Error parsing data " + e.toString());
         }
     }
+
+
+    static public void SaveData(String path, byte[] data) {
+        try {
+            File file = new File(path);
+
+            if (file == null) {
+                return;
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(data);
+                fos.close();
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+        } catch (Exception e) {
+        }
+    }
+
+	public static String getDateTime() {
+		DateFormat df = new SimpleDateFormat("yyyy_MM_dd_hh_mm_ss");
+		df.setTimeZone(TimeZone.getTimeZone("GMT"));
+		return df.format(new Date());
+	}
+
 }

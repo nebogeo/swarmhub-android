@@ -20,6 +20,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.content.Context;
 import android.hardware.Camera.Parameters;
+import android.hardware.Camera.PictureCallback;
 
 public class CameraPreview extends SurfaceView implements
         SurfaceHolder.Callback {
@@ -38,6 +39,11 @@ public class CameraPreview extends SurfaceView implements
         this.mSurfaceHolder = this.getHolder();
         this.mSurfaceHolder.addCallback(this);
         this.mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+
+    public void TakePicture(PictureCallback cb) {
+        Log.i("starwisp","taking picture");
+        mPictureTaker.TakePicture(this,cb);
     }
 
     public void Shutdown() {

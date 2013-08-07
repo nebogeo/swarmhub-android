@@ -201,11 +201,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (event type date nutrients)
-  (list type date nutrients))
-(define (event-type e) (list-ref e 0))
-(define (event-date e) (list-ref e 1))
-(define (event-nutrients e) (list-ref e 2))
+(define (event id type date nutrients amount quality season crop soil)
+  (list id type date nutrients amount quality season crop soil))
+
+(define (empty-event)
+  (event 0 "" (list 0 0 0) (list 0 0 0) 0 "" "" "" ""))
+(define (event-id e) (list-ref e 0))
+(define (event-type e) (list-ref e 1))
+(define (event-date e) (list-ref e 2))
+(define (event-nutrients e) (list-ref e 3))
+(define (event-amount e) (list-ref e 4))
+(define (event-quality e) (list-ref e 5))
+(define (event-season e) (list-ref e 6))
+(define (event-crop e) (list-ref e 7))
+(define (event-soil e) (list-ref e 8))
 
 (define (field name soil crop)
   (list name soil crop '()))
@@ -228,10 +237,10 @@
 (define (state)
   (list
    (calc pig 25 "2" autumn normal mediumheavy)
-   (field "" "" "")
+   (empty-field)
    (saved-data-load)
    (list date-day date-month date-year)
-   (event "" (list 0 0 0) (list 0 0 0))))
+   (empty-event)))
 
 (define (state-calc s) (list-ref s 0))
 (define (state-modify-calc s v) (list-replace s 0 v))
@@ -246,9 +255,11 @@
 (define (state-modify-event s v) (list-replace s 4 v))
 
 (define (saved-data fields)
-  (list fields))
+  (list fields 0))
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
+(define (saved-data-next-event-id f) (list-ref f 1))
+(define (saved-data-modify-next-event-id f v) (list-replace f 1 v))
 
 (define (saved-data-modify-field fn name f)
   (saved-data-modify-fields
@@ -322,6 +333,13 @@
    (lambda (s)
      (state-modify-saved-data
       s fn))))
+
+(define (mutate-make-event-id!)
+  (mutate-saved-data!
+   (lambda (d)
+     (saved-data-modify-next-event-id
+      d (+ (saved-data-next-event-id d) 1))))
+  (saved-data-next-event-id (state-saved-data gstate)))
 
 (define (get-fields)
   (saved-data-fields (state-saved-data gstate)))
@@ -432,6 +450,18 @@
    (layout 'fill-parent 'fill-parent 1 'left)
    l))
 
+(define (setup-for-picture-from-event)
+  ;; setup the calculator values for the camera pic from the event
+  (mutate-state!
+   (lambda (s)
+     (state-modify-calc
+      s (calc-modify-amount
+         (calc-modify-type
+          (state-calc s)
+          (event-type (current-event)))
+         (event-amount (current-event)))))))
+
+
 (define (build-field-buttons)
   (if (null? (get-fields))
       (list (text-view (make-id "temp") "Add some fields" 20 fillwrap))
@@ -445,19 +475,24 @@
             (list (start-activity "field" 2 (field-name field))))))
        (get-fields))))
 
-(define (build-events)
+(define (build-event-buttons)
   (if (null? (field-events (current-field)))
       (list (text-view (make-id "temp") "No events yet" 15 fillwrap))
       (map
        (lambda (event)
+         (display "making an event button")(newline)
+         (display event)(newline)
          (button
-          (make-id "ev")
+          (make-id (string-append
+                    "event-"
+                    ;; need to add field to prevent clashing with other field id numbers
+                    (field-name (current-field))
+                    (number->string (event-id event))))
           (string-append (event-type event)
                          " "
                          (date->string (event-date event)))
           15 fillwrap
           (lambda ()
-            (display "hello")(newline)
             (mutate-current-event! (lambda (ev) event))
             (list
              (start-activity "eventview" 2 "")))))
@@ -644,7 +679,7 @@
       (make-id "field-events-list")
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
-      (build-events))
+      (build-event-buttons))
      (space (layout 'fill-parent 20 1 'left))
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda ()
@@ -673,7 +708,7 @@
       (list
        (update-widget 'text-view (get-id "field-title") 'text arg)
        (update-widget 'linear-layout (get-id "field-events-list") 'contents
-                      (build-events))
+                      (build-event-buttons))
        (update-widget 'canvas (get-id "graph") 'drawlist (build-graph))))
     (lambda (activity) '())
     (lambda (activity) '())
@@ -682,7 +717,7 @@
     (lambda (activity requestcode resultcode)
       (list
        (update-widget 'linear-layout (get-id "field-events-list") 'contents
-                      (build-events)))))
+                      (build-event-buttons)))))
 
   (activity
    "fieldcalc"
@@ -758,9 +793,16 @@
                  (lambda (field)
                    (field-add-event
                     field
-                    (event (calc-type (state-calc gstate))
-                           (current-date)
-                           (calc-nutrients)))))
+                    (event
+                     (mutate-make-event-id!)
+                     (calc-type (state-calc gstate))
+                     (current-date)
+                     (calc-nutrients)
+                     (calc-amount (state-calc gstate))
+                     (calc-quality (state-calc gstate))
+                     (calc-season (state-calc gstate))
+                     (calc-crop (state-calc gstate))
+                     (calc-soil (state-calc gstate))))))
 
                 (mutate-saved-data!
                  (lambda (d)
@@ -791,25 +833,27 @@
 
   (activity
    "eventview"
-    (vert
-     (text-view (make-id "fieldview-title") "field name" 40 fillwrap)
+   (let ((item (lambda (id title)
+                 (horiz
+                  (text-view (make-id (string-append id "-text")) title 20
+                             (layout 'fill-parent 'wrap-content 0.7 'left))
+                  (text-view (make-id id) "type" 30
+                             (layout 'fill-parent 'wrap-content 0.3 'left))))))
+     (vert
+    (text-view (make-id "fieldview-title") "field name" 40 fillwrap)
 
-     (horiz
-      (text-view (make-id "type-text") "Type" 20
-                 (layout 'fill-parent 'wrap-content 0.8 'left))
-      (text-view (make-id "type") "type" 30
-                 (layout 'fill-parent 'wrap-content 0.2 'left)))
+    (item "type" "Type")
+    (item "date" "Date")
+    (item "amount" "Amount")
+    (item "quality" "Quality")
+    (item "season" "Season")
+    (item "crop" "Crop")
+    (item "soil" "Soil")
 
-     (horiz
-      (text-view (make-id "date-text") "Date" 20
-                 (layout 'fill-parent 'wrap-content 0.8 'left))
-      (text-view (make-id "date") "date" 30
-                 (layout 'fill-parent 'wrap-content 0.2 'left)))
-
-     (horiz
-      (text-view (make-id "nt") "N" 30 fillwrap)
-      (text-view (make-id "pt") "P" 30 fillwrap)
-      (text-view (make-id "kt") "K" 30 fillwrap))
+    (horiz
+     (text-view (make-id "nt") "N" 30 fillwrap)
+     (text-view (make-id "pt") "P" 30 fillwrap)
+     (text-view (make-id "kt") "K" 30 fillwrap))
      (horiz
       (text-view (make-id "fcna") "12" 30 fillwrap)
       (text-view (make-id "fcpa") "75" 30 fillwrap)
@@ -818,8 +862,13 @@
      (button (make-id "delete") "Delete" 20 fillwrap
              (lambda () (list (finish-activity 99))))
 
+     (button (make-id "camera") "Camera" 20 fillwrap
+             (lambda ()
+               (setup-for-picture-from-event)
+               (list (start-activity "camera" 2 ""))))
+
      (button (make-id "back") "Back" 20 fillwrap
-             (lambda () (list (finish-activity 99)))))
+             (lambda () (list (finish-activity 99))))))
 
    (lambda (activity arg)
      (activity-layout activity))
@@ -830,6 +879,13 @@
       (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
       (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
       (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
+
+      (update-widget 'text-view (get-id "amount") 'text (number->string (event-amount (current-event))))
+      (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
+      (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
+      (update-widget 'text-view (get-id "crop") 'text (event-crop (current-event)))
+      (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
+
       (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field)))))
    (lambda (activity) '())
    (lambda (activity) '())
@@ -845,7 +901,15 @@
     (image-view (make-id "example") "test" (layout 'wrap-content 220 1 'left))
     (horiz
      (button (make-id "take-pic") "Take photo" 10 fillwrap
-             (lambda () (list)))
+             (lambda ()
+               (let ((path (string-append
+                            (field-name (current-field))
+                            "-"
+                            (number->string (event-id (current-event)))
+                            "/")))
+                 (list
+                  (make-directory path)
+                  (update-widget 'camera-preview (get-id "camera") 'take-picture path)))))
      (button (make-id "back") "Back" 10 fillwrap
              (lambda ()
                (list

@@ -284,6 +284,7 @@
 (define (drawlist-line colour width points) (list "line" colour width points))
 
 (define (toast msg) (list "toast" 0 "toast" msg))
+(define (make-directory name) (list "make-directory" 0 "make-directory" name))
 
 (define (time-picker-dialog name fn)
   (list "time-picker-dialog" 0 "time-picker-dialog" name fn))

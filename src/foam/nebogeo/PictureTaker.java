@@ -57,6 +57,8 @@ class PictureTaker
             CloseCamera();
             OpenCamera(view);
 
+            Log.i("starwisp","picturetaker taking picture");
+
             try {
                 mCam.takePicture(null, null, picture);
             }
