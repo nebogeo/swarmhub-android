@@ -23,7 +23,6 @@
 ;; connect date to season
 ;; metric/imperial
 ;; email data??
-;; are you sure dialogs
 
 
 (define cattle "Cattle Slurry")
@@ -502,6 +501,25 @@
    "/"
    (number->string (list-ref d 2))))
 
+(define (date->season d)
+  (cond
+   ((or
+     (eqv? (list-ref d 1) 3)
+     (eqv? (list-ref d 1) 4)
+     (eqv? (list-ref d 1) 5)) spring)
+   ((or
+     (eqv? (list-ref d 1) 6)
+     (eqv? (list-ref d 1) 7)
+     (eqv? (list-ref d 1) 8)) summer)
+   ((or
+     (eqv? (list-ref d 1) 9)
+     (eqv? (list-ref d 1) 10)
+     (eqv? (list-ref d 1) 11)) autumn)
+   ((or
+     (eqv? (list-ref d 1) 12)
+     (eqv? (list-ref d 1) 1)
+     (eqv? (list-ref d 1) 2)) winter)))
+
 (define-activity-list
   (activity
    "main"
@@ -738,10 +756,16 @@
                        (lambda (day month year)
                          (mutate-state!
                           (lambda (s)
-                            (state-modify-date s (list day month year))))
+                            (state-modify-date s (list day (+ month 1) year))))
+
+                         (display "date is :")(display (current-date))(newline)
+                         (display "season is :")(display (date->season (current-date)))(newline)
+                         (update-season! "fc" (date->season (current-date)))
+
+
                          (list
                           (update-widget 'text-view (make-id "fc-date-text") 'text
-                                         (date->string (list day month year))))))))))
+                                         (date->string (list day (+ month 1) year))))))))))
 
      (horiz
       (vert
@@ -825,8 +849,10 @@
    (lambda (activity arg)
      (update-soil! "fc" (field-soil (current-field)))
      (update-crop! "fc" (field-crop (current-field)))
-     ;; todo from date
-     (update-season! "fc" winter)
+
+     (display "date is :")(display (current-date))(newline)
+     (display "season is :")(display (date->season (current-date)))(newline)
+     (update-season! "fc" (date->season (current-date)))
      (list
       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field)))))
    (lambda (activity) '())
