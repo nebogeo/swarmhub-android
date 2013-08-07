@@ -683,14 +683,22 @@
      (horiz
       (button (make-id "delete") "Delete" 20 (layout 'fill-parent 'wrap-content 0.7 'left)
               (lambda ()
-                (mutate-saved-data!
-                 (lambda (d)
-                   (saved-data-modify-fields
-                    d (fields-remove-field
-                       (get-fields)
-                       (field-name (current-field))))))
-                (mutate-current-field! (lambda (f) (empty-field)))
-                (list (finish-activity 99))))
+                (list
+                 (alert-dialog
+                  "deleteme"
+                  (string-append "Do you want to delete '" (field-name (current-field)) "'?")
+                  (lambda (r)
+                    (cond
+                     ((zero? r) (list))
+                     (else
+                      (mutate-saved-data!
+                       (lambda (d)
+                         (saved-data-modify-fields
+                          d (fields-remove-field
+                             (get-fields)
+                             (field-name (current-field))))))
+                      (mutate-current-field! (lambda (f) (empty-field)))
+                      (list (finish-activity 99)))))))))
       (button (make-id "back") "Back" 20 (layout 'fill-parent 'wrap-content 0.3 'left)
               (lambda ()
                 (mutate-current-field! (lambda (f) (empty-field)))
@@ -902,25 +910,33 @@
      (horiz
       (button (make-id "delete") "Delete" 20 (layout 'fill-parent 'wrap-content 0.7 'left)
               (lambda ()
-                ;; modify current field
-                (mutate-current-field!
-                 (lambda (field)
-                   (field-remove-event
-                    field
-                    (event-id (current-event)))))
+                (list
+                 (alert-dialog
+                  "deleteme-event"
+                  (string-append "Do you want to delete this event?")
+                  (lambda (r)
+                    (cond
+                     ((zero? r) (list))
+                     (else
+                      ;; modify current field
+                      (mutate-current-field!
+                       (lambda (field)
+                         (field-remove-event
+                          field
+                          (event-id (current-event)))))
 
-                ;; stick it in saved data
-                (mutate-saved-data!
-                 (lambda (d)
-                   (saved-data-modify-field
-                    (lambda (field)
-                      (current-field))
-                    (field-name (current-field))
-                    d)))
+                      ;; stick it in saved data
+                      (mutate-saved-data!
+                       (lambda (d)
+                         (saved-data-modify-field
+                          (lambda (field)
+                            (current-field))
+                          (field-name (current-field))
+                          d)))
 
-                ;; clean out current just in case
-                (mutate-current-event! (lambda (ev) (empty-event)))
-                (list (finish-activity 99))))
+                      ;; clean out current just in case
+                      (mutate-current-event! (lambda (ev) (empty-event)))
+                      (list (finish-activity 99)))))))))
 
       (button (make-id "back") "Back" 20 (layout 'fill-parent 'wrap-content 0.3 'left)
               (lambda () (list (finish-activity 99)))))))

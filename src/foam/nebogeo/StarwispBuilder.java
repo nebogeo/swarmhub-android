@@ -58,9 +58,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.text.DateFormat;
+import android.content.DialogInterface;
 
 import android.app.TimePickerDialog;
 import android.app.DatePickerDialog;
+import android.app.AlertDialog;
 import java.util.Calendar;
 
 import org.json.JSONException;
@@ -418,6 +420,34 @@ public class StarwispBuilder
                 d.show();
                 return;
             };
+
+            if (token.equals("alert-dialog")) {
+
+                final String name = arr.getString(3);
+                final String msg = arr.getString(5);
+
+                DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        int result = 0;
+                        if (which==DialogInterface.BUTTON_POSITIVE) result=1;
+                        String ret=m_Scheme.eval("(dialog-callback \""+
+                                                 name+"\" '("+result+"))");
+                        try {
+                            UpdateList(ctx, new JSONArray(ret));
+                        } catch (JSONException e) {
+                            Log.e("starwisp", "Error parsing data " + e.toString());
+                        }
+                    }
+                };
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+                builder.setMessage(msg).setPositiveButton("Yes", dialogClickListener)
+                    .setNegativeButton("No", dialogClickListener).show();
+
+                return;
+            }
+
 
 
             if (token.equals("start-activity")) {

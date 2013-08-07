@@ -292,6 +292,8 @@
   (list "time-picker-dialog" 0 "time-picker-dialog" name fn))
 (define (date-picker-dialog name fn)
   (list "date-picker-dialog" 0 "date-picker-dialog" name fn))
+(define (alert-dialog name msg fn)
+  (list "alert-dialog" 0 "alert-dialog" name fn msg))
 (define (dialog-type d) (list-ref d 2))
 (define (dialog-name d) (list-ref d 3))
 (define (dialog-fn d) (list-ref d 4))
@@ -405,7 +407,9 @@
         (for-each
          (lambda (event)
            (when (or
+                  ;; todo - something a bit more fancy
                   (equal? (list-ref event 0) "date-picker-dialog")
+                  (equal? (list-ref event 0) "alert-dialog")
                   (equal? (list-ref event 0) "list-files"))
                  (add-new-dialog! event)))
          events)))
