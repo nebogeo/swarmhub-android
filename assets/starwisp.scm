@@ -20,7 +20,6 @@
 ;; order events
 ;; about, logos etc
 ;; app logo
-;; connect date to season
 ;; metric/imperial
 ;; email data??
 
@@ -132,24 +131,24 @@
 (define nutrients-metric
   (list
    (nutrients
-    cattle "m3" 100
+    cattle "m3/ha" 100
     (list
      (quality "2" (nitrogen (soil (crop 8 16) (crop 48 56))  48 72 56) 30 220)
      (quality "6" (nitrogen (soil (crop 13 26) (crop 65 78)) 65 91 65) 60 290)
      (quality "10" (nitrogen (soil (crop 18 36) (crop 72 90)) 72 90 72) 90 360)))
    (nutrients
-    pig "m3" 50
+    pig "m3/ha" 50
     (list
      (quality "2" (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
      (quality "4" (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
      (quality "6" (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
    (nutrients
-    poultry "tons" 10
+    poultry "tons/ha" 10
     (list
      (quality layer (nitrogen (soil (crop 19 28.5) (crop 47.5 57)) 47.5 66.5 66.5) 84 86)
      (quality broiler (nitrogen (soil (crop 30 45) (crop 75 90)) (soil 60 75) 90 90) 150 162)))
    (nutrients
-    FYM "tons" 50
+    FYM "tons/ha" 50
     (list
      (quality other (nitrogen (soil 15 30) 30 30 30) 95 360) ;; other
      (quality fresh (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
@@ -608,9 +607,9 @@
      (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
 
      (horiz
-      (text-view (make-id "nt") "N" 30 fillwrap)
-      (text-view (make-id "pt") "P" 30 fillwrap)
-      (text-view (make-id "kt") "K" 30 fillwrap))
+      (text-view (make-id "nt") "N/ha" 30 fillwrap)
+      (text-view (make-id "pt") "P/ha" 30 fillwrap)
+      (text-view (make-id "kt") "K/ha" 30 fillwrap))
      (horiz
       (text-view (make-id "cna") "12" 30
                  (layout 'fill-parent 'fill-parent 1 'centre))
@@ -800,9 +799,9 @@
      (text-view (make-id "fcamount-value") "4500 gallons" 20 fillwrap)
 
      (horiz
-       (text-view (make-id "nt") "N" 30 fillwrap)
-       (text-view (make-id "pt") "P" 30 fillwrap)
-       (text-view (make-id "kt") "K" 30 fillwrap))
+       (text-view (make-id "nt") "N/ha" 30 fillwrap)
+       (text-view (make-id "pt") "P/ha" 30 fillwrap)
+       (text-view (make-id "kt") "K/ha" 30 fillwrap))
      (horiz
         (text-view (make-id "fcna") "12" 30 fillwrap)
         (text-view (make-id "fcpa") "75" 30 fillwrap)
@@ -881,9 +880,9 @@
     (item "soil" "Soil")
 
     (horiz
-     (text-view (make-id "nt") "N" 30 fillwrap)
-     (text-view (make-id "pt") "P" 30 fillwrap)
-     (text-view (make-id "kt") "K" 30 fillwrap))
+     (text-view (make-id "nt") "N/ha" 30 fillwrap)
+     (text-view (make-id "pt") "P/ha" 30 fillwrap)
+     (text-view (make-id "kt") "K/ha" 30 fillwrap))
      (horiz
       (text-view (make-id "fcna") "12" 30 fillwrap)
       (text-view (make-id "fcpa") "75" 30 fillwrap)
