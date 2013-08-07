@@ -21,5 +21,10 @@
         <activity android:name="FieldHistoryActivity"></activity>
         <activity android:name="FieldCalcActivity"></activity>
         <activity android:name="CameraActivity"></activity>
+        <activity android:name="EventViewActivity"></activity>
     </application>
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
 </manifest>

@@ -230,7 +230,8 @@
    (calc pig 25 "2" autumn normal mediumheavy)
    (field "" "" "")
    (saved-data-load)
-   (list date-day date-month date-year)))
+   (list date-day date-month date-year)
+   (event "" (list 0 0 0) (list 0 0 0))))
 
 (define (state-calc s) (list-ref s 0))
 (define (state-modify-calc s v) (list-replace s 0 v))
@@ -241,6 +242,8 @@
    (list-replace s 2 (saved-data-save (fn (state-saved-data s)))))
 (define (state-date s) (list-ref s 3))
 (define (state-modify-date s v) (list-replace s 3 v))
+(define (state-event s) (list-ref s 4))
+(define (state-modify-event s v) (list-replace s 4 v))
 
 (define (saved-data fields)
   (list fields))
@@ -264,13 +267,13 @@
    f))
 
 (define (saved-data-save d)
-  (let ((f (open-output-file "/sdcard/swarmhub-data.scm")))
+  (let ((f (open-output-file (string-append dirname "swarmhub-data.scm"))))
     (write d f)
     (close-output-port f))
   d)
 
 (define (saved-data-load)
-  (let* ((f (open-input-file "/sdcard/swarmhub-data.scm")))
+  (let* ((f (open-input-file (string-append dirname "swarmhub-data.scm"))))
     (if (not f)
         (saved-data-save (saved-data '()))
         (let ((r (read f)))
@@ -332,10 +335,18 @@
 (define (current-calc)
   (state-calc gstate))
 
+(define (current-event)
+  (state-event gstate))
+
 (define (mutate-current-field! fn)
   (mutate-state!
    (lambda (s)
      (state-modify-field s (fn (state-field s))))))
+
+(define (mutate-current-event! fn)
+  (mutate-state!
+   (lambda (s)
+     (state-modify-event s (fn (state-event s))))))
 
 (define (find-field name)
   (define (_ f)
@@ -439,12 +450,17 @@
       (list (text-view (make-id "temp") "No events yet" 15 fillwrap))
       (map
        (lambda (event)
-         (text-view
+         (button
           (make-id "ev")
           (string-append (event-type event)
                          " "
                          (date->string (event-date event)))
-          15 fillwrap))
+          15 fillwrap
+          (lambda ()
+            (display "hello")(newline)
+            (mutate-current-event! (lambda (ev) event))
+            (list
+             (start-activity "eventview" 2 "")))))
        (field-events (current-field)))))
 
 (define (date->string d)
@@ -466,11 +482,12 @@
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-field-buttons))
+     (space (layout 'fill-parent 20 1 'left))
      (button (make-id "f3") "New field" 20 fillwrap
              (lambda ()
                (list
                 (start-activity "newfield" 2 ""))))
-     (text-view (make-id "measure-text") "Measurements" 20 fillwrap)
+     (text-view (make-id "measure-text") "Measurement units" 20 fillwrap)
      (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
      (button (make-id "f2") "Calculator" 20 fillwrap
              (lambda () (list (start-activity "calc" 2 "")))))
@@ -628,6 +645,7 @@
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-events))
+     (space (layout 'fill-parent 20 1 'left))
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda ()
                (list (start-activity "fieldcalc" 2 ""))))
@@ -772,16 +790,67 @@
    (lambda (activity requestcode resultcode) '()))
 
   (activity
-   "camera"
-   (linear-layout
-     (make-id "top")
-     'vertical
-     (layout 'fill-parent 'fill-parent 1 'left)
+   "eventview"
+    (vert
+     (text-view (make-id "fieldview-title") "field name" 40 fillwrap)
+
+     (horiz
+      (text-view (make-id "type-text") "Type" 20
+                 (layout 'fill-parent 'wrap-content 0.8 'left))
+      (text-view (make-id "type") "type" 30
+                 (layout 'fill-parent 'wrap-content 0.2 'left)))
+
+     (horiz
+      (text-view (make-id "date-text") "Date" 20
+                 (layout 'fill-parent 'wrap-content 0.8 'left))
+      (text-view (make-id "date") "date" 30
+                 (layout 'fill-parent 'wrap-content 0.2 'left)))
+
+     (horiz
+      (text-view (make-id "nt") "N" 30 fillwrap)
+      (text-view (make-id "pt") "P" 30 fillwrap)
+      (text-view (make-id "kt") "K" 30 fillwrap))
+     (horiz
+      (text-view (make-id "fcna") "12" 30 fillwrap)
+      (text-view (make-id "fcpa") "75" 30 fillwrap)
+      (text-view (make-id "fcka") "55" 30 fillwrap))
+
+     (button (make-id "delete") "Delete" 20 fillwrap
+             (lambda () (list (finish-activity 99))))
+
+     (button (make-id "back") "Back" 20 fillwrap
+             (lambda () (list (finish-activity 99)))))
+
+   (lambda (activity arg)
+     (activity-layout activity))
+   (lambda (activity arg)
      (list
-;      (text-view (make-id "camera") "Camera preview image" 50 fillwrap)
-      (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
-      (button (make-id "back") "Back" 20 fillwrap
-              (lambda () (list (finish-activity 99))))))
+      (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
+      (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
+      (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
+      (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
+      (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
+      (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field)))))
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity requestcode resultcode) '()))
+
+
+  (activity
+   "camera"
+   (vert
+    (camera-preview (make-id "camera") (layout 295 220 1 'centre))
+    (image-view (make-id "example") "test" (layout 'wrap-content 220 1 'left))
+    (horiz
+     (button (make-id "take-pic") "Take photo" 10 fillwrap
+             (lambda () (list)))
+     (button (make-id "back") "Back" 10 fillwrap
+             (lambda ()
+               (list
+                (update-widget 'camera-preview (get-id "camera") 'shutdown 0)
+                (finish-activity 99))))))
 
    (lambda (activity arg)
      (activity-layout activity))

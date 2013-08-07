@@ -36,6 +36,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.Space;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
@@ -54,8 +55,6 @@ import java.util.Calendar;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONArray;
-
-
 
 public class StarwispBuilder
 {
@@ -145,6 +144,14 @@ public class StarwispBuilder
                 }
                 return;
             }
+
+            if (type.equals("space")) {
+                // Space v = new Space(ctx); (class not found runtime error??)
+                TextView v = new TextView(ctx);
+                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(2)));
+                parent.addView(v);
+            }
+
 
             if (type.equals("image-view")) {
                 ImageView v = new ImageView(ctx);
@@ -279,8 +286,17 @@ public class StarwispBuilder
                 parent.addView(v);
             }
 
+            if (type.equals("camera-preview")) {
+                PictureTaker pt = new PictureTaker();
+                CameraPreview v = new CameraPreview(ctx,pt);
+                final int wid = arr.getInt(1);
+                v.setId(wid);
+                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(2)));
+                parent.addView(v);
+            }
+
         } catch (JSONException e) {
-            Log.e("starwisp", "Error parsing data " + e.toString());
+            Log.e("starwisp", "Error parsing ["+arr.toString()+"] " + e.toString());
         }
     }
 
@@ -302,7 +318,6 @@ public class StarwispBuilder
             String token = arr.getString(2);
 
             Log.i("starwisp", "Update: "+type+" "+id+" "+token);
-
 
             // non widget commands
             if (token.equals("toast")) {
@@ -451,6 +466,17 @@ public class StarwispBuilder
                 }
                 return;
             }
+
+            if (type.equals("camera-preview")) {
+                Log.i("starwisp","camera update");
+                CameraPreview v = (CameraPreview)vv;
+                if (token.equals("shutdown")) {
+                    Log.i("starwisp","shutting down camera");
+                    v.Shutdown();
+                }
+                return;
+            }
+
 
             if (type.equals("spinner")) {
                 Spinner v = (Spinner)vv;

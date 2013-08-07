@@ -37,6 +37,7 @@ public class StarwispActivity extends Activity
     static public Scheme m_Scheme;
     static public StarwispBuilder m_Builder;
     public Typeface m_Typeface;
+    static public String m_AppDir;
 
     @Override
     public void onCreate(Bundle savedInstanceState)

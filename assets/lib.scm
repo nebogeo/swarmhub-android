@@ -229,10 +229,17 @@
 (define (linear-layout-layout t) (list-ref t 3))
 (define (linear-layout-children t) (list-ref t 4))
 
+(define (space layout) (list "space" "999" layout))
+(define (space-view-layout t) (list-ref t 2))
+
 (define (image-view id image layout) (list "image-view" id image layout))
 (define (image-view-id t) (list-ref t 1))
 (define (image-view-image t) (list-ref t 2))
-(define (imagge-view-layout t) (list-ref t 3))
+(define (image-view-layout t) (list-ref t 3))
+
+(define (camera-preview id layout) (list "camera-preview" id layout))
+(define (camera-preview-id t) (list-ref t 1))
+(define (camera-preview-layout t) (list-ref t 2))
 
 (define (text-view id text size layout) (list "text-view" id text size layout))
 (define (text-view-id t) (list-ref t 1))

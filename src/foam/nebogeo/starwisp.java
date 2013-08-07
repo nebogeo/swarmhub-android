@@ -23,6 +23,7 @@ import android.util.Log;
 import android.content.Context;
 import android.graphics.Color;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -62,6 +63,7 @@ public class starwisp extends StarwispActivity
         ActivityManager.Register("fieldhistory",FieldHistoryActivity.class);
         ActivityManager.Register("fieldcalc",FieldCalcActivity.class);
         ActivityManager.Register("camera",CameraActivity.class);
+        ActivityManager.Register("eventview",EventViewActivity.class);
     };
 
 
@@ -76,13 +78,19 @@ public class starwisp extends StarwispActivity
         m_Builder = new StarwispBuilder(m_Scheme);
         m_Name = "main";
 
+        String dirname = "swarmhub/";
+        m_AppDir = "/sdcard/"+dirname;
+        File appdir = new File(m_AppDir);
+        appdir.mkdirs();
+
         // tell scheme the date
         final Calendar c = Calendar.getInstance();
         int day = c.get(Calendar.DAY_OF_MONTH);
         int month = c.get(Calendar.MONTH);
         int year = c.get(Calendar.YEAR);
 
-        m_Scheme.eval("(define date-day "+day+") (define date-month "+month+") (define date-year "+year+")");
+        // pass in a bunch of useful stuff
+        m_Scheme.eval("(define dirname \"/sdcard/"+dirname+"\")(define date-day "+day+") (define date-month "+month+") (define date-year "+year+")");
 
         Log.i("starwisp","started, now running starwisp.scm...");
         m_Scheme.eval(m_Scheme.readRawTextFile(this, "starwisp.scm"));
