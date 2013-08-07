@@ -285,6 +285,8 @@
 
 (define (toast msg) (list "toast" 0 "toast" msg))
 (define (make-directory name) (list "make-directory" 0 "make-directory" name))
+;; treat this like a dialog so the callback fires
+(define (list-files name path fn) (list "list-files" 0 "list-files" name fn path))
 
 (define (time-picker-dialog name fn)
   (list "time-picker-dialog" 0 "time-picker-dialog" name fn))
@@ -371,7 +373,7 @@
 (define (add-new-widget! w)
   ;; todo - when to clear out?
   (when (not (widget-find dynamic-widgets (widget-id w)))
-        (display "adding widget ")(display w)(newline)
+        ;;(display "adding widget ")(display w)(newline)
         (set! dynamic-widgets (cons w dynamic-widgets))))
 
 (define (update-dynamic-widgets! events)
@@ -395,14 +397,16 @@
 (define (add-new-dialog! d)
   ;; todo - when to clear out?
   (when (not (dialog-find dialogs (dialog-name d)))
-        (display "adding dialog ")(display d)(newline)
+        ;;(display "adding dialog ")(display d)(newline)
         (set! dialogs (cons d dialogs))))
 
 (define (update-dialogs! events)
   (when (list? events)
         (for-each
          (lambda (event)
-           (when (equal? (list-ref event 0) "date-picker-dialog")
+           (when (or
+                  (equal? (list-ref event 0) "date-picker-dialog")
+                  (equal? (list-ref event 0) "list-files"))
                  (add-new-dialog! event)))
          events)))
 

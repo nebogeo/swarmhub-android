@@ -528,7 +528,8 @@
              (lambda () (list (start-activity "calc" 2 "")))))
    (lambda (activity arg)
      (activity-layout activity))
-   (lambda (activity arg) '())
+   (lambda (activity arg)
+     (list))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -591,7 +592,7 @@
                                               (calc-amount (current-calc))))))))
 
      (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
-     ;;      (image-view (make-id "example") "test" wrap)
+
      (horiz
       (text-view (make-id "nt") "N" 30 fillwrap)
       (text-view (make-id "pt") "P" 30 fillwrap)
@@ -858,6 +859,37 @@
       (text-view (make-id "fcna") "12" 30 fillwrap)
       (text-view (make-id "fcpa") "75" 30 fillwrap)
       (text-view (make-id "fcka") "55" 30 fillwrap))
+
+     (linear-layout
+      (make-id "gallery")
+      'vertical
+      (layout 'fill-parent 'fill-parent 1 'left)
+      (list
+       (button (make-id "load-gallery") "Load Gallery" 20 fillwrap
+               (lambda ()
+                 (let ((path (string-append
+                              (field-name (current-field)) "-"
+                              (number->string (event-id (current-event))) "/")))
+                   (list
+                    (list-files
+                     "filelister"
+                     path
+                     (lambda (images)
+                       (list
+                        (update-widget
+                         'linear-layout (get-id "gallery") 'contents
+                         (cons
+                          (text-view (make-id "temp") "Gallery" 30 fillwrap)
+                          (foldl
+                           (lambda (image r)
+                             (append
+                              (list (image-view (make-id "i")
+                                                (string-append dirname path image)
+                                                (layout 'wrap-content 240 1 'left))
+                                    (space (layout 'fill-parent 10 1 'left)))
+                              r))
+                           '()
+                           images))))))))))))
 
      (button (make-id "delete") "Delete" 20 fillwrap
              (lambda () (list (finish-activity 99))))

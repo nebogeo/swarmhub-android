@@ -21,6 +21,8 @@ import android.app.Activity;
 import android.util.Log;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 
@@ -165,10 +167,20 @@ public class StarwispBuilder
             if (type.equals("image-view")) {
                 ImageView v = new ImageView(ctx);
                 v.setId(arr.getInt(1));
-                int id = ctx.getResources().getIdentifier(arr.getString(2),
-                                                          "drawable", ctx.getPackageName());
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
-                v.setImageResource(id);
+
+                String image = arr.getString(2);
+
+                Log.i("starwisp",image);
+
+                if (image.startsWith("/")) {
+                    Bitmap bitmap = BitmapFactory.decodeFile(image);
+                    v.setImageBitmap(bitmap);
+                } else {
+                    int id = ctx.getResources().getIdentifier(image,"drawable", ctx.getPackageName());
+                    v.setImageResource(id);
+                }
+
                 parent.addView(v);
             }
 
@@ -355,8 +367,28 @@ public class StarwispBuilder
                 return;
             }
 
-            if (token.equals("date-picker-dialog")) {
+            if (token.equals("list-files")) {
+                final String name = arr.getString(3);
+                File file = new File(((StarwispActivity)ctx).m_AppDir+arr.getString(5));
+                File list[] = file.listFiles();
 
+                String code="(";
+                for( int i=0; i< list.length; i++)
+                {
+                    code+=" \""+list[i].getName()+"\"";
+                }
+                code+=")";
+
+                try {
+                    String ret=m_Scheme.eval("(dialog-callback \""+ name+"\" '("+code+"))");
+                    UpdateList(ctx, new JSONArray(ret));
+                } catch (JSONException e) {
+                    Log.e("starwisp", "Error parsing data " + e.toString());
+                }
+                return;
+            }
+
+            if (token.equals("date-picker-dialog")) {
                 final Calendar c = Calendar.getInstance();
                 int day = c.get(Calendar.DAY_OF_MONTH);
                 int month = c.get(Calendar.MONTH);
@@ -369,11 +401,9 @@ public class StarwispBuilder
                     ctx,
                     new DatePickerDialog.OnDateSetListener() {
                         public void onDateSet(DatePicker view, int year, int month, int day) {
-                            Log.i("starwisp","datepicked returned");
                             try {
                                 String ret=m_Scheme.eval("(dialog-callback \""+
                                                          name+"\" '("+day+" "+month+" "+year+"))");
-                                Log.i("starwisp",ret);
                                 UpdateList(ctx, new JSONArray(ret));
                             } catch (JSONException e) {
                                 Log.e("starwisp", "Error parsing data " + e.toString());
@@ -381,8 +411,6 @@ public class StarwispBuilder
                         }
                     }, year, month, day);
                 d.show();
-
-                Log.i("starwisp", "attempt date picker");
                 return;
             };
 
@@ -435,6 +463,10 @@ public class StarwispBuilder
                     int iid = ctx.getResources().getIdentifier(arr.getString(3),
                                                                "drawable", ctx.getPackageName());
                     v.setImageResource(iid);
+                }
+                if (token.equals("external-image")) {
+                    Bitmap bitmap = BitmapFactory.decodeFile(arr.getString(3));
+                    v.setImageBitmap(bitmap);
                 }
                 return;
             }
