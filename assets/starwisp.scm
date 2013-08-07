@@ -24,6 +24,9 @@
 ;; view/delete events
 ;; about, logos etc
 ;; app logo
+;; connect date to season
+;; metric/imperial
+
 
 (define cattle "Cattle Slurry")
 (define FYM "Farmyard Manure")
@@ -491,14 +494,19 @@
      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
      (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
               (lambda (v)
-                (cons
-                 (update-widget 'spinner (get-id "cquality") 'array
-                                (cond
-                                 ((equal? v cattle) (list "2" "6" "10"))
-                                 ((equal? v pig) (list "2" "4" "6"))
-                                 ((equal? v poultry) (list layer broiler))
-                                 ((equal? v FYM) (list fresh other))))
-                 (update-type! "c" v))))
+                (append
+                 (update-type! "c" v)
+                 (list
+                  (update-widget 'spinner (get-id "cquality") 'array
+                                 (cond
+                                  ((equal? v cattle) (list "2" "6" "10"))
+                                  ((equal? v pig) (list "2" "4" "6"))
+                                  ((equal? v poultry) (list layer broiler))
+                                  ((equal? v FYM) (list fresh other))))
+
+                  (update-widget 'image-view (get-id "example") 'image
+                                 (find-image (calc-type (current-calc))
+                                             (calc-amount (current-calc))))))))
 
      (horiz
       (vert
@@ -522,7 +530,13 @@
 
      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
      (seek-bar (make-id "amount") 100 fillwrap
-               (lambda (v) (update-amount! "c" v)))
+               (lambda (v)
+                 (append
+                  (update-amount! "c" v)
+                  (list
+                   (update-widget 'image-view (get-id "example") 'image
+                                  (find-image (calc-type (current-calc))
+                                              (calc-amount (current-calc))))))))
 
      (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
      ;;      (image-view (make-id "example") "test" wrap)
@@ -537,6 +551,11 @@
                  (layout 'fill-parent 'fill-parent 1 'centre))
       (text-view (make-id "cka") "55" 30
                  (layout 'fill-parent 'fill-parent 1 'centre)))
+
+     (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
+     (button (make-id "camera") "Camera" 20 fillwrap
+             (lambda () (list (start-activity "camera" 2 ""))))
+
      (button (make-id "finished") "Done" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
 
@@ -760,7 +779,7 @@
      (layout 'fill-parent 'fill-parent 1 'left)
      (list
 ;      (text-view (make-id "camera") "Camera preview image" 50 fillwrap)
-      (image-view (make-id "example") "test" wrap)
+      (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
       (button (make-id "back") "Back" 20 fillwrap
               (lambda () (list (finish-activity 99))))))
 
