@@ -2,8 +2,8 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
   <item android:state_pressed="true">
     <shape>
-      <gradient android:startColor="#aaffaa"
-                android:endColor="#ddffdd" android:angle="270" />
+      <gradient android:endColor="#7755aa55"
+                android:startColor="#77338833" android:angle="270" />
       <stroke android:width="2dp" android:color="#000000" />
       <corners android:radius="15dp" />
       <padding android:left="10dp" android:top="10dp"
@@ -12,8 +12,8 @@
   </item>
     <item android:state_focused="true">
       <shape>
-        <gradient android:endColor="#ddffdd"
-                  android:startColor="#aaffaa" android:angle="270" />
+        <gradient android:endColor="#7766bb66"
+                  android:startColor="#7788dd88" android:angle="270" />
         <stroke android:width="2dp" android:color="#000000" />
         <corners android:radius="15dp" />
         <padding android:left="10dp" android:top="10dp"
@@ -22,8 +22,8 @@
     </item>
     <item>
       <shape>
-        <gradient android:endColor="#aaffaa"
-                  android:startColor="#ddffdd" android:angle="270" />
+        <gradient android:endColor="#7788dd88"
+                  android:startColor="#7766bb66" android:angle="270" />
         <stroke android:width="2dp" android:color="#000000" />
         <corners android:radius="15dp" />
         <padding android:left="10dp" android:top="10dp"

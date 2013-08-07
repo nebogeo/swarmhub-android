@@ -15,24 +15,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; calculator
+;; todo
+;; include example images
+;; take photos
+;; gallery views
+;; finish graph
+;; order events
+;; view/delete events
+;; about, logos etc
+;; app logo
 
 (define cattle "Cattle Slurry")
 (define FYM "Farmyard Manure")
 (define pig "Pig Slurry")
 (define poultry "Poultry Litter")
-
 (define normal "Normal")
 (define grass-oilseed "Grassland/Winter oilseed rape")
-
 (define sandyshallow "Sandy/Shallow")
 (define mediumheavy "Medium/Heavy")
-
 (define autumn "Autumn")
 (define winter "Winter")
 (define spring "Spring")
 (define summer "Summer")
+(define fresh "Soil incorporated, fresh")
+(define other "Surface applied or old")
+(define layer "Layer manure")
+(define broiler "Broiler litter")
 
+(define images
+  (list
+   (list cattle
+         (list
+          (list 25 "cattle_25m3")
+          (list 50 "cattle_50m3")
+          (list 100 "cattle_100m3")))
+   (list FYM
+         (list
+          (list 25 "fym_25t")
+          (list 50 "fym_50t")))
+   (list pig
+         (list
+          (list 25 "pig_25m3")
+          (list 50 "pig_50m3")))
+   (list poultry
+         (list
+          (list 5 "poultry_5t")
+          (list 10 "poultry_10t")))))
+
+(define (abs n)
+  (if (< n 0) (- n) n))
+
+(define (find-image type amount)
+  (define (_type images)
+    (cond
+     ((null? images) #f)
+     ((equal? (car (car images)) type) (car images))
+     (else (_type (cdr images)))))
+  (define (_amount images s)
+    (when (not (null? images))
+          (display images)(newline)
+          (display (- amount (car (car images))))(newline))
+    (cond
+     ((null? images) s)
+     ((< (abs (- amount (car (car images))))
+         (abs (- amount (car s))))
+      (_amount (cdr images) (car images)))
+     (else (_amount (cdr images) s))))
+  (let ((type-images (cadr (_type images))))
+    (cadr (_amount type-images (car type-images)))))
 
 (define (nutrients type units amount table) (list type units amount table))
 (define (nutrients-type n) (list-ref n 0))
@@ -99,13 +149,13 @@
    (nutrients
     poultry "tons" 10
     (list
-     (quality "layer" (nitrogen (soil (crop 19 28.5) (crop 47.5 57)) 47.5 66.5 66.5) 84 86)
-     (quality "broiler" (nitrogen (soil (crop 30 45) (crop 75 90)) (soil 60 75) 90 90) 150 162)))
+     (quality layer (nitrogen (soil (crop 19 28.5) (crop 47.5 57)) 47.5 66.5 66.5) 84 86)
+     (quality broiler (nitrogen (soil (crop 30 45) (crop 75 90)) (soil 60 75) 90 90) 150 162)))
    (nutrients
     FYM "tons" 50
     (list
-     (quality "other" (nitrogen (soil 15 30) 30 30 30) 95 360) ;; other
-     (quality "fresh" (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
+     (quality other (nitrogen (soil 15 30) 30 30 30) 95 360) ;; other
+     (quality fresh (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
     ))))
 
 (define (error . args)
@@ -276,6 +326,9 @@
 (define (current-date)
   (state-date gstate))
 
+(define (current-calc)
+  (state-calc gstate))
+
 (define (mutate-current-field! fn)
   (mutate-state!
    (lambda (s)
@@ -443,8 +496,8 @@
                                 (cond
                                  ((equal? v cattle) (list "2" "6" "10"))
                                  ((equal? v pig) (list "2" "4" "6"))
-                                 ((equal? v poultry) (list "layer" "broiler"))
-                                 ((equal? v FYM) (list "fresh" "other"))))
+                                 ((equal? v poultry) (list layer broiler))
+                                 ((equal? v FYM) (list fresh other))))
                  (update-type! "c" v))))
 
      (horiz
@@ -471,7 +524,7 @@
      (seek-bar (make-id "amount") 100 fillwrap
                (lambda (v) (update-amount! "c" v)))
 
-     (text-view (make-id "camount-value") "4500 gallons" 15 fillwrap)
+     (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
      ;;      (image-view (make-id "example") "test" wrap)
      (horiz
       (text-view (make-id "nt") "N" 30 fillwrap)
@@ -561,7 +614,6 @@
                (list (start-activity "fieldcalc" 2 ""))))
      (button (make-id "delete") "Delete" 20 fillwrap
              (lambda ()
-;;               (mutate-current-field! (lambda (f) (empty-field)))
                (mutate-saved-data!
                 (lambda (d)
                   (saved-data-modify-fields
@@ -569,9 +621,12 @@
                    (fields-remove-field
                     (get-fields)
                     (field-name (current-field))))))
+               (mutate-current-field! (lambda (f) (empty-field)))
                (list (finish-activity 99))))
      (button (make-id "back") "Back" 20 fillwrap
-             (lambda () (list (finish-activity 99)))))
+             (lambda ()
+               (mutate-current-field! (lambda (f) (empty-field)))
+               (list (finish-activity 99)))))
 
     (lambda (activity arg)
       (activity-layout activity))
@@ -596,6 +651,7 @@
    "fieldcalc"
     (vert
      (text-view (make-id "fieldcalc-title") "field name" 40 fillwrap)
+     (text-view (make-id "blurb") "Enter new crap spreading event" 20 fillwrap)
      (horiz
       (text-view (make-id "fc-date-text")
                  (date->string (list date-day date-month date-year)) 30 fillwrap)
@@ -617,14 +673,18 @@
        (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
                 (lambda (v)
                   (display "manure function")(newline)
-                  (cons
-                   (update-widget 'spinner (get-id "quality") 'array
-                                  (cond
-                                   ((equal? v cattle) (list "2" "6" "10"))
-                                   ((equal? v pig) (list "2" "4" "6"))
-                                   ((equal? v poultry) (list "layer" "broiler"))
-                                   ((equal? v FYM) (list "fresh" "other"))))
-                  (update-type! "fc" v)))))
+                  (append
+                   (update-type! "fc" v)
+                   (list
+                    (update-widget 'image-view (get-id "example") 'image
+                                   (find-image (calc-type (current-calc))
+                                               (calc-amount (current-calc))))
+                    (update-widget 'spinner (get-id "quality") 'array
+                                   (cond
+                                    ((equal? v cattle) (list "2" "6" "10"))
+                                    ((equal? v pig) (list "2" "4" "6"))
+                                    ((equal? v poultry) (list layer broiler))
+                                    ((equal? v FYM) (list fresh other)))))))))
 
       (vert
        (text-view (make-id "quality-text") "Quality" 15 fillwrap)
@@ -633,26 +693,13 @@
      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
      (seek-bar (make-id "amount") 100 fillwrap
               (lambda (v)
-                (update-amount! "fc" v)))
-     (text-view (make-id "fcamount-value") "4500 gallons" 15 fillwrap)
+                (cons
+                 (update-widget 'image-view (get-id "example") 'image
+                     (find-image (calc-type (current-calc))
+                                 (calc-amount (current-calc))))
+                 (update-amount! "fc" v))))
+     (text-view (make-id "fcamount-value") "4500 gallons" 20 fillwrap)
 
-;                                        ;     (canvas (make-id "graph")
-;             (layout 'fill-parent 100 1 'centre)
-;             (list
-;              (drawlist-line '(255 127 127) 2 '(0 100 100 50))
-;              (drawlist-line '(255 127 127) 2 '(100 50 200 75))
-;              (drawlist-line '(255 127 127) 2 '(200 75 300 20))
-;              (drawlist-line '(127 255 127) 2 '(0 100 100 55))
-;              (drawlist-line '(127 255 127) 2 '(100 55 200 70))
-;              (drawlist-line '(127 255 127) 2 '(200 70 300 25))
-;              (drawlist-line '(127 127 255) 2 '(0 100 100 60))
-;              (drawlist-line '(127 127 255) 2 '(100 60 200 55))
-;              (drawlist-line '(127 127 255) 2 '(200 55 300 34))
-;              ))
-;     (image-view (make-id "example") "testhalf" wrap)
-
-     (button (make-id "camera") "Camera" 20 fillwrap
-             (lambda () (list (start-activity "camera" 2 ""))))
      (horiz
        (text-view (make-id "nt") "N" 30 fillwrap)
        (text-view (make-id "pt") "P" 30 fillwrap)
@@ -661,6 +708,10 @@
         (text-view (make-id "fcna") "12" 30 fillwrap)
         (text-view (make-id "fcpa") "75" 30 fillwrap)
         (text-view (make-id "fcka") "55" 30 fillwrap))
+
+     (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
+     (button (make-id "camera") "Camera" 20 fillwrap
+             (lambda () (list (start-activity "camera" 2 ""))))
 
      (horiz
       (button (make-id "save") "Save" 20 fillwrap
@@ -708,14 +759,18 @@
      'vertical
      (layout 'fill-parent 'fill-parent 1 'left)
      (list
-      (text-view (make-id "camera") "Camera preview image" 50 fillwrap)
+;      (text-view (make-id "camera") "Camera preview image" 50 fillwrap)
       (image-view (make-id "example") "test" wrap)
       (button (make-id "back") "Back" 20 fillwrap
               (lambda () (list (finish-activity 99))))))
 
    (lambda (activity arg)
      (activity-layout activity))
-   (lambda (activity arg) '())
+   (lambda (activity arg)
+     (list
+      (update-widget 'image-view (get-id "example") 'image
+                     (find-image (calc-type (current-calc))
+                                 (calc-amount (current-calc))))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())

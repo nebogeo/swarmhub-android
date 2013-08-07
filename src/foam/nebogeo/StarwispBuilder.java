@@ -148,6 +148,7 @@ public class StarwispBuilder
 
             if (type.equals("image-view")) {
                 ImageView v = new ImageView(ctx);
+                v.setId(arr.getInt(1));
                 int id = ctx.getResources().getIdentifier(arr.getString(2),
                                                           "drawable", ctx.getPackageName());
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
