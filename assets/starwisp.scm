@@ -16,12 +16,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo
-;; include example images
-;; take photos
-;; gallery views
 ;; finish graph
 ;; order events
-;; view/delete events
+;; delete events
 ;; about, logos etc
 ;; app logo
 ;; connect date to season
@@ -75,9 +72,6 @@
      ((equal? (car (car images)) type) (car images))
      (else (_type (cdr images)))))
   (define (_amount images s)
-    (when (not (null? images))
-          (display images)(newline)
-          (display (- amount (car (car images))))(newline))
     (cond
      ((null? images) s)
      ((< (abs (- amount (car (car images))))
@@ -248,7 +242,7 @@
 (define (state-modify-field s v) (list-replace s 1 v))
 (define (state-saved-data s) (list-ref s 2))
 (define (state-modify-saved-data s fn)
-   (list-replace s 2 (saved-data-save (fn (state-saved-data s)))))
+  (list-replace s 2 (saved-data-save (fn (state-saved-data s)))))
 (define (state-date s) (list-ref s 3))
 (define (state-modify-date s v) (list-replace s 3 v))
 (define (state-event s) (list-ref s 4))
@@ -263,13 +257,12 @@
 
 (define (saved-data-modify-field fn name f)
   (saved-data-modify-fields
-   f
-   (map
-    (lambda (field)
-      (if (equal? (field-name field) name)
-          (fn field)
-          field))
-    (saved-data-fields f))))
+   f (map
+      (lambda (field)
+        (if (equal? (field-name field) name)
+            (fn field)
+            field))
+      (saved-data-fields f))))
 
 (define (fields-remove-field f name)
   (filter
@@ -308,14 +301,12 @@
 (define (calc-modify-soil s v) (list-replace s 5 v))
 
 (define (update-calc! pre fn)
-  (display "update-calc!")(newline)
   (mutate-state!
    (lambda (s)
      (state-modify-calc s (fn (state-calc s)))))
   (run-calc pre))
 
 (define (update-type! pre v)
-  (display "update-type!")(newline)
   (update-calc! pre (lambda (c) (calc-modify-type c v))))
 (define (update-amount! pre v) (update-calc! pre (lambda (c) (calc-modify-amount c v))))
 (define (update-quality! pre v) (update-calc! pre (lambda (c) (calc-modify-quality c v))))
@@ -376,7 +367,6 @@
   (_ (get-fields)))
 
 (define (calc-nutrients)
-  (display "calc-nutrients")(newline)
   (let* ((type (calc-type (state-calc gstate)))
          (amount (calc-amount (state-calc gstate)))
          (quality (calc-quality (state-calc gstate)))
@@ -480,8 +470,6 @@
       (list (text-view (make-id "temp") "No events yet" 15 fillwrap))
       (map
        (lambda (event)
-         (display "making an event button")(newline)
-         (display event)(newline)
          (button
           (make-id (string-append
                     "event-"
@@ -745,7 +733,6 @@
        (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
        (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
                 (lambda (v)
-                  (display "manure function")(newline)
                   (append
                    (update-type! "fc" v)
                    (list
@@ -790,20 +777,21 @@
       (button (make-id "save") "Save" 20 fillwrap
               (lambda ()
 
-                (mutate-current-field!
-                 (lambda (field)
-                   (field-add-event
-                    field
-                    (event
-                     (mutate-make-event-id!)
-                     (calc-type (state-calc gstate))
-                     (current-date)
-                     (calc-nutrients)
-                     (calc-amount (state-calc gstate))
-                     (calc-quality (state-calc gstate))
-                     (calc-season (state-calc gstate))
-                     (calc-crop (state-calc gstate))
-                     (calc-soil (state-calc gstate))))))
+                (let ((event-id (mutate-make-event-id!)))
+                  (mutate-current-field!
+                   (lambda (field)
+                     (field-add-event
+                      field
+                      (event
+                       event-id
+                       (calc-type (state-calc gstate))
+                       (current-date)
+                       (calc-nutrients)
+                       (calc-amount (state-calc gstate))
+                       (calc-quality (state-calc gstate))
+                       (calc-season (state-calc gstate))
+                       (calc-crop (state-calc gstate))
+                       (calc-soil (state-calc gstate)))))))
 
                 (mutate-saved-data!
                  (lambda (d)
@@ -867,14 +855,21 @@
       (list
        (button (make-id "load-gallery") "Load Gallery" 20 fillwrap
                (lambda ()
+                 (display "button cb")(newline)
+                 (display (event-id (current-event)))(newline)
+
                  (let ((path (string-append
                               (field-name (current-field)) "-"
                               (number->string (event-id (current-event))) "/")))
+                   (display path)(newline)
                    (list
                     (list-files
-                     "filelister"
+                     (string-append "filelister-" path)
                      path
                      (lambda (images)
+                       (display "filelister cb")(newline)
+                       (display path)(newline)
+                       (display images)(newline)
                        (list
                         (update-widget
                          'linear-layout (get-id "gallery") 'contents
@@ -883,7 +878,7 @@
                           (foldl
                            (lambda (image r)
                              (append
-                              (list (image-view (make-id "i")
+                              (list (image-view (make-id image)
                                                 (string-append dirname path image)
                                                 (layout 'wrap-content 240 1 'left))
                                     (space (layout 'fill-parent 10 1 'left)))
@@ -905,6 +900,8 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
+     (display "on start")(newline)
+     (display (event-id (current-event)))(newline)
      (list
       (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
       (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))

@@ -370,20 +370,25 @@ public class StarwispBuilder
             if (token.equals("list-files")) {
                 final String name = arr.getString(3);
                 File file = new File(((StarwispActivity)ctx).m_AppDir+arr.getString(5));
-                File list[] = file.listFiles();
+                // todo, should probably call callback with empty list
+                if (file != null) {
+                    File list[] = file.listFiles();
 
-                String code="(";
-                for( int i=0; i< list.length; i++)
-                {
-                    code+=" \""+list[i].getName()+"\"";
-                }
-                code+=")";
+                    if (list != null) {
+                        String code="(";
+                        for( int i=0; i< list.length; i++)
+                        {
+                            code+=" \""+list[i].getName()+"\"";
+                        }
+                        code+=")";
 
-                try {
-                    String ret=m_Scheme.eval("(dialog-callback \""+ name+"\" '("+code+"))");
-                    UpdateList(ctx, new JSONArray(ret));
-                } catch (JSONException e) {
-                    Log.e("starwisp", "Error parsing data " + e.toString());
+                        try {
+                            String ret=m_Scheme.eval("(dialog-callback \""+ name+"\" '("+code+"))");
+                            UpdateList(ctx, new JSONArray(ret));
+                        } catch (JSONException e) {
+                            Log.e("starwisp", "Error parsing data " + e.toString());
+                        }
+                    }
                 }
                 return;
             }
