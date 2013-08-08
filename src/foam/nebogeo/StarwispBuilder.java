@@ -249,6 +249,7 @@ public class StarwispBuilder
                 SeekBar v = new SeekBar(ctx);
                 v.setId(arr.getInt(1));
                 v.setMax(arr.getInt(2));
+                v.setProgress(arr.getInt(2)/2);
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
                 final String fn = arr.getString(4);
 

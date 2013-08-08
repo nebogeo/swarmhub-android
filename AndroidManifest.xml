@@ -22,6 +22,7 @@
         <activity android:name="FieldCalcActivity"></activity>
         <activity android:name="CameraActivity"></activity>
         <activity android:name="EventViewActivity"></activity>
+        <activity android:name="AboutActivity"></activity>
     </application>
 
     <uses-permission android:name="android.permission.CAMERA" />
