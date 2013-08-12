@@ -585,9 +585,29 @@ public class StarwispBuilder
                 return;
             }
 
+            if (type.equals("seek-bar")) {
+                SeekBar v = new SeekBar(ctx);
+                if (token.equals("max")) {
+                    Log.i("starwisp","Max:"+arr.getInt(3));
+                    // android seekbar bug workaround
+                    int p=v.getProgress();
+                    v.setMax(0);
+                    v.setProgress(0);
+                    v.setMax(arr.getInt(3));
+                    v.setProgress(1000);
+
+                    // not working.... :(
+                }
+            }
+
 
             if (type.equals("spinner")) {
                 Spinner v = (Spinner)vv;
+
+                if (token.equals("selection")) {
+                    v.setSelection(arr.getInt(3));
+                }
+
                 if (token.equals("array")) {
                     final JSONArray items = arr.getJSONArray(3);
                     ArrayList<String> spinnerArray = new ArrayList<String>();

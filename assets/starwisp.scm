@@ -40,6 +40,8 @@
 (define other "Surface applied or old")
 (define layer "Layer manure")
 (define broiler "Broiler litter")
+(define metric "Metric")
+(define imperial "Imperial")
 
 (define images
   (list
@@ -154,6 +156,21 @@
      (quality fresh (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
     ))))
 
+(define (tons/ha->tons/acre a)
+  (* a 2.47105))
+
+(define (tons/acre->tons/ha a)
+  (/ a 2.47105))
+
+(define (m3/ha->gallons/acre a)
+  (* a 89.0183597))
+
+(define (gallons/acre->m3/ha a)
+  (/ a 89.0183597))
+
+(define (ha->acres a)
+  (* a 2.47105))
+
 (define (error . args)
   (display (apply string-append args))(newline))
 
@@ -166,11 +183,13 @@
               (error "quality " quality " not found")
               (get-nutrients-inner
                (nutrients-amount nutrients)
+               (nutrients-units nutrients)
                q amount season crop soil))))))
 
-(define (get-nutrients-inner quantity quality amount season crop soil)
+(define (get-nutrients-inner quantity units quality amount season crop soil)
   (process-nutrients
    amount
+   units
    quantity
    (list
     ;; nitrogen
@@ -186,11 +205,27 @@
     (quality-p quality)
     (quality-k quality))))
 
-(define (process-nutrients amount quantity nutrients)
-  (map
-   (lambda (q)
-     (* amount (/ q quantity)))
-   nutrients))
+(define (imperial->metric amount units)
+  (if (equal? (current-units) metric)
+      amount
+      (if (equal? units "m3/ha")
+          (gallons/acre->m3/ha amount)
+          (tons/acre->tons/ha amount))))
+
+(define (metric->imperial amount units)
+  (if (equal? (current-units) metric)
+      amount
+      (ha->acres amount)))
+
+;; quantity is from the table (so I can debug easily it matches the data)
+;; amount is from the slider
+(define (process-nutrients amount units quantity nutrients)
+  (let ((amount (imperial->metric amount units)))
+    (display amount)(newline)
+    (map
+     (lambda (q)
+       (metric->imperial (* amount (/ q quantity)) units))
+     nutrients)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -240,7 +275,8 @@
    (empty-field)
    (saved-data-load)
    (list date-day date-month date-year)
-   (empty-event)))
+   (empty-event)
+   1))
 
 (define (state-calc s) (list-ref s 0))
 (define (state-modify-calc s v) (list-replace s 0 v))
@@ -253,13 +289,17 @@
 (define (state-modify-date s v) (list-replace s 3 v))
 (define (state-event s) (list-ref s 4))
 (define (state-modify-event s v) (list-replace s 4 v))
+(define (state-seek-mul s) (list-ref s 5))
+(define (state-modify-seek-mul s v) (list-replace s 5 v))
 
 (define (saved-data fields)
-  (list fields 0))
+  (list fields 0 metric))
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
 (define (saved-data-next-event-id f) (list-ref f 1))
 (define (saved-data-modify-next-event-id f v) (list-replace f 1 v))
+(define (saved-data-units f) (list-ref f 2))
+(define (saved-data-modify-units f v) (list-replace f 2 v))
 
 (define (saved-data-modify-field fn name f)
   (saved-data-modify-fields
@@ -338,20 +378,28 @@
       d (+ (saved-data-next-event-id d) 1))))
   (saved-data-next-event-id (state-saved-data gstate)))
 
+(define (mutate-units! v)
+  (mutate-saved-data!
+   (lambda (d)
+     (saved-data-modify-units d v))))
+
+(define (current-units)
+  (saved-data-units
+   (state-saved-data gstate)))
+
 (define (get-fields)
   (saved-data-fields (state-saved-data gstate)))
 
-(define (current-field)
-  (state-field gstate))
+(define (current-field) (state-field gstate))
+(define (current-date) (state-date gstate))
+(define (current-calc) (state-calc gstate))
+(define (current-event) (state-event gstate))
+(define (current-seek-mul) (state-seek-mul gstate))
 
-(define (current-date)
-  (state-date gstate))
-
-(define (current-calc)
-  (state-calc gstate))
-
-(define (current-event)
-  (state-event gstate))
+(define (mutate-current-seek-mul! a)
+  (mutate-state!
+   (lambda (s)
+     (state-modify-seek-mul s a))))
 
 (define (mutate-current-field! fn)
   (mutate-state!
@@ -373,8 +421,9 @@
   (_ (get-fields)))
 
 (define (calc-nutrients)
+  (display "current seek mul ")(display (current-seek-mul))(newline)
   (let* ((type (calc-type (state-calc gstate)))
-         (amount (calc-amount (state-calc gstate)))
+         (amount (* (current-seek-mul) (calc-amount (state-calc gstate))))
          (quality (calc-quality (state-calc gstate)))
          (season (calc-season (state-calc gstate)))
          (crop (calc-crop (state-calc gstate)))
@@ -390,12 +439,17 @@
 
 (define (run-calc prepend)
   (let ((amounts (calc-nutrients))
-        (amount (calc-amount (state-calc gstate)))
+        (amount (* (current-seek-mul) (calc-amount (state-calc gstate))))
         (type (calc-type (state-calc gstate))))
     (list
      (update-widget 'text-view (get-id (string-append prepend "amount-value")) 'text
                     (string-append (number->string amount) " "
-                                   (nutrients-units (find type nutrients-metric))))
+                                   (if (equal? (current-units) metric)
+                                       (nutrients-units (find type nutrients-metric))
+                                       (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+                                           "gallons/acre"
+                                           "tons/acre"))))
+
      (update-widget 'text-view (get-id (string-append prepend "na"))
                     'text (number->string (list-ref amounts 0)))
      (update-widget 'text-view (get-id (string-append prepend "pa"))
@@ -403,6 +457,8 @@
      (update-widget 'text-view (get-id (string-append prepend "ka"))
                     'text (number->string (list-ref amounts 2))))))
 
+(define (spacer size)
+  (space (layout 'fill-parent size 1 'left)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -457,6 +513,12 @@
           (event-type (current-event)))
          (event-amount (current-event)))))))
 
+(define (update-seek-mul! manure)
+  (if (and (equal? (current-units) imperial)
+           (or (equal? manure cattle)
+               (equal? manure pig)))
+      (mutate-current-seek-mul! 100)
+      (mutate-current-seek-mul! 1)))
 
 (define (build-field-buttons)
   (if (null? (get-fields))
@@ -530,13 +592,16 @@
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-field-buttons))
-     (space (layout 'fill-parent 20 1 'left))
+     (spacer 20)
      (button (make-id "f3") "New field" 20 fillwrap
              (lambda ()
                (list
                 (start-activity "newfield" 2 ""))))
      (text-view (make-id "measure-text") "Measurement units" 20 fillwrap)
-     (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
+     (spinner (make-id "units") (list metric imperial) fillwrap
+              (lambda (v)
+                (mutate-units! v)
+                (list)))
      (button (make-id "f2") "Calculator" 20 fillwrap
              (lambda () (list (start-activity "calc" 2 ""))))
      (button (make-id "about-button") "About" 20 fillwrap
@@ -546,7 +611,9 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
-     (list))
+     (list
+      (update-widget 'spinner (get-id "units") 'selection
+                     (if (equal? (current-units) metric) 0 1))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -564,6 +631,7 @@
      (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
      (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
               (lambda (v)
+                (update-seek-mul! v)
                 (append
                  (update-type! "c" v)
                  (list
@@ -609,7 +677,6 @@
                                               (calc-amount (current-calc))))))))
 
      (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
-
      (horiz
       (text-view (make-id "nt") "N/ha" 30 fillwrap)
       (text-view (make-id "pt") "P/ha" 30 fillwrap)
@@ -629,7 +696,13 @@
 
    (lambda (activity arg)
      (activity-layout activity))
-   (lambda (activity arg) '())
+   (lambda (activity arg)
+     (if (equal? (current-units) metric) (list)
+         (list
+
+          (update-widget 'text-view (get-id "nt") 'text "N/acre")
+          (update-widget 'text-view (get-id "pt") 'text "P/acre")
+          (update-widget 'text-view (get-id "kt") 'text "K/acre"))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -695,7 +768,7 @@
       'vertical
       (layout 'fill-parent 'fill-parent 1 'left)
       (build-event-buttons))
-     (space (layout 'fill-parent 20 1 'left))
+     (spacer 20)
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda ()
                (list (start-activity "fieldcalc" 2 ""))))
@@ -769,6 +842,7 @@
        (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
        (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
                 (lambda (v)
+                  (update-seek-mul! v)
                   (append
                    (update-type! "fc" v)
                    (list
@@ -847,8 +921,14 @@
      (update-soil! "fc" (field-soil (current-field)))
      (update-crop! "fc" (field-crop (current-field)))
      (update-season! "fc" (date->season (current-date)))
-     (list
-      (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field)))))
+     (append
+      (if (equal? (current-units) metric) (list)
+          (list
+           (update-widget 'text-view (get-id "nt") 'text "N/acre")
+           (update-widget 'text-view (get-id "pt") 'text "P/acre")
+           (update-widget 'text-view (get-id "kt") 'text "K/acre")))
+      (list
+       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field))))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -909,7 +989,7 @@
                               (list (image-view (make-id image)
                                                 (string-append dirname path image)
                                                 (layout 'wrap-content 240 1 'left))
-                                    (space (layout 'fill-parent 10 1 'left)))
+                                    (spacer 10))
                               r))
                            '()
                            images))))))))))))
@@ -957,20 +1037,26 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
-     (list
-      (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
-      (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
-      (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
-      (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
-      (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
+     (append
+      (if (equal? (current-units) metric) (list)
+          (list
+           (update-widget 'text-view (get-id "nt") 'text "N/acre")
+           (update-widget 'text-view (get-id "pt") 'text "P/acre")
+           (update-widget 'text-view (get-id "kt") 'text "K/acre")))
+      (list
+       (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
+       (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
+       (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
+       (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
+       (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
 
-      (update-widget 'text-view (get-id "amount") 'text (number->string (event-amount (current-event))))
-      (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
-      (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
-      (update-widget 'text-view (get-id "crop") 'text (event-crop (current-event)))
-      (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
+       (update-widget 'text-view (get-id "amount") 'text (number->string (event-amount (current-event))))
+       (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
+       (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
+       (update-widget 'text-view (get-id "crop") 'text (event-crop (current-event)))
+       (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
 
-      (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field)))))
+       (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field))))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -1020,6 +1106,9 @@
     (text-view (make-id "about-text")
                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse turpis magna, pulvinar dignissim feugiat a, mattis vel ipsum."
                15 fillwrap)
+    (spacer 20)
+    (image-view (make-id "about-logo") "logo_duchy" fillwrap)
+    (spacer 20)
     (button (make-id "back") "Back" 20 fillwrap
             (lambda ()
               (list
@@ -1029,10 +1118,7 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
-     (list
-      (update-widget 'image-view (get-id "example") 'image
-                     (find-image (calc-type (current-calc))
-                                 (calc-amount (current-calc))))))
+     (list))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
