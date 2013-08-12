@@ -538,7 +538,11 @@
      (text-view (make-id "measure-text") "Measurement units" 20 fillwrap)
      (spinner (make-id "measure") (list "Metric" "Imperial") fillwrap (lambda (v) (list)))
      (button (make-id "f2") "Calculator" 20 fillwrap
-             (lambda () (list (start-activity "calc" 2 "")))))
+             (lambda () (list (start-activity "calc" 2 ""))))
+     (button (make-id "about-button") "About" 20 fillwrap
+             (lambda ()
+               (list
+                (start-activity "about" 2 "")))))
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
@@ -1008,5 +1012,32 @@
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity requestcode resultcode) '()))
+
+  (activity
+   "about"
+   (vert
+    (text-view (make-id "about-title") "About" 40 fillwrap)
+    (text-view (make-id "about-text")
+               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse turpis magna, pulvinar dignissim feugiat a, mattis vel ipsum."
+               15 fillwrap)
+    (button (make-id "back") "Back" 20 fillwrap
+            (lambda ()
+              (list
+               (update-widget 'camera-preview (get-id "camera") 'shutdown 0)
+               (finish-activity 99)))))
+
+   (lambda (activity arg)
+     (activity-layout activity))
+   (lambda (activity arg)
+     (list
+      (update-widget 'image-view (get-id "example") 'image
+                     (find-image (calc-type (current-calc))
+                                 (calc-amount (current-calc))))))
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity requestcode resultcode) '()))
+
 
   )
