@@ -156,20 +156,14 @@
      (quality fresh (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
     ))))
 
-(define (tons/ha->tons/acre a)
-  (* a 2.47105))
-
 (define (tons/acre->tons/ha a)
-  (/ a 2.47105))
-
-(define (m3/ha->gallons/acre a)
-  (* a 89.0183597))
+  (* a 2.47105381))
 
 (define (gallons/acre->m3/ha a)
-  (/ a 89.0183597))
+  (* a 0.0112336377))
 
-(define (ha->acres a)
-  (* a 2.47105))
+(define (kg/ha->units/acre a)
+  (* a 0.8))
 
 (define (error . args)
   (display (apply string-append args))(newline))
@@ -215,7 +209,10 @@
 (define (metric->imperial amount units)
   (if (equal? (current-units) metric)
       amount
-      (ha->acres amount)))
+      (kg/ha->units/acre amount)))
+
+(define (rounding a)
+  (/ (round (* 100 a)) 100))
 
 ;; quantity is from the table (so I can debug easily it matches the data)
 ;; amount is from the slider
@@ -224,16 +221,16 @@
     (display amount)(newline)
     (map
      (lambda (q)
-       (metric->imperial (* amount (/ q quantity)) units))
+       (rounding (metric->imperial (* amount (/ q quantity)) units)))
      nutrients)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (event id type date nutrients amount quality season crop soil)
-  (list id type date nutrients amount quality season crop soil))
+(define (event id type date nutrients amount quality season crop soil units)
+  (list id type date nutrients amount quality season crop soil units))
 
 (define (empty-event)
-  (event 0 "" (list 0 0 0) (list 0 0 0) 0 "" "" "" ""))
+  (event 0 "" (list 0 0 0) (list 0 0 0) 0 "" "" "" "" metric))
 (define (event-id e) (list-ref e 0))
 (define (event-type e) (list-ref e 1))
 (define (event-date e) (list-ref e 2))
@@ -243,6 +240,7 @@
 (define (event-season e) (list-ref e 6))
 (define (event-crop e) (list-ref e 7))
 (define (event-soil e) (list-ref e 8))
+(define (event-units e) (list-ref e 9))
 
 (define (field name soil crop)
   (list name soil crop '()))
@@ -901,7 +899,8 @@
                        (calc-quality (state-calc gstate))
                        (calc-season (state-calc gstate))
                        (calc-crop (state-calc gstate))
-                       (calc-soil (state-calc gstate)))))))
+                       (calc-soil (state-calc gstate))
+                       (current-units))))))
 
                 (mutate-saved-data!
                  (lambda (d)
@@ -1038,7 +1037,7 @@
      (activity-layout activity))
    (lambda (activity arg)
      (append
-      (if (equal? (current-units) metric) (list)
+      (if (equal? (event-units (current-event)) metric) (list)
           (list
            (update-widget 'text-view (get-id "nt") 'text "N/acre")
            (update-widget 'text-view (get-id "pt") 'text "P/acre")
