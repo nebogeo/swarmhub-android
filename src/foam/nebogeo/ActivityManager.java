@@ -54,4 +54,18 @@ public class ActivityManager
             src.startActivityForResult(intent, requestcode);
         }
     }
-}
+
+    static public void StartActivityOneWay(Activity src, String name, String arg)
+    {
+        Class ActClass = m_Activities.get(name);
+        if (ActClass == null)
+        {
+            Log.i("starwisp","activity "+name+" not found in registry");
+        }
+        else
+        {
+            Intent intent = new Intent(src,ActClass);
+            intent.putExtra("arg", arg);
+            src.startActivity(intent);
+        }
+    }

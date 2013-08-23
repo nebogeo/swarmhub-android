@@ -56,7 +56,8 @@ public class starwisp extends StarwispActivity
 {
     static {
         // register all activities here
-        ActivityManager.Register("main",starwisp.class);
+        ActivityManager.Register("splash",starwisp.class);
+        ActivityManager.Register("main",MainActivity.class);
         ActivityManager.Register("calc",CalcActivity.class);
         ActivityManager.Register("newfield",NewFieldActivity.class);
         ActivityManager.Register("field",FieldActivity.class);
@@ -65,7 +66,6 @@ public class starwisp extends StarwispActivity
         ActivityManager.Register("camera",CameraActivity.class);
         ActivityManager.Register("eventview",EventViewActivity.class);
         ActivityManager.Register("about",AboutActivity.class);
-        ActivityManager.Register("splash",SplashActivity.class);
         ActivityManager.Register("email",EmailActivity.class);
     };
 
@@ -79,7 +79,7 @@ public class starwisp extends StarwispActivity
         // build static things
         m_Scheme = new Scheme(this);
         m_Builder = new StarwispBuilder(m_Scheme);
-        m_Name = "main";
+        m_Name = "splash";
 
         String dirname = "swarmhub/";
         m_AppDir = "/sdcard/"+dirname;
