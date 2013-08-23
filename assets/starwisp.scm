@@ -291,13 +291,15 @@
 (define (state-modify-seek-mul s v) (list-replace s 5 v))
 
 (define (saved-data fields)
-  (list fields 0 metric))
+  (list fields 0 metric ""))
 (define (saved-data-fields f) (list-ref f 0))
 (define (saved-data-modify-fields f v) (list-replace f 0 v))
 (define (saved-data-next-event-id f) (list-ref f 1))
 (define (saved-data-modify-next-event-id f v) (list-replace f 1 v))
 (define (saved-data-units f) (list-ref f 2))
 (define (saved-data-modify-units f v) (list-replace f 2 v))
+(define (saved-data-email f) (list-ref f 3))
+(define (saved-data-modify-email f v) (list-replace f 3 v))
 
 (define (saved-data-modify-field fn name f)
   (saved-data-modify-fields
@@ -383,6 +385,15 @@
 
 (define (current-units)
   (saved-data-units
+   (state-saved-data gstate)))
+
+(define (mutate-email! v)
+  (mutate-saved-data!
+   (lambda (d)
+     (saved-data-modify-email d v))))
+
+(define (current-email)
+  (saved-data-email
    (state-saved-data gstate)))
 
 (define (get-fields)
@@ -580,32 +591,52 @@
      (eqv? (list-ref d 1) 2)) winter)))
 
 (define-activity-list
+
+  (activity
+   "splash"
+   (vert
+    (vert
+     (text-view (make-id "splash-title") "The Farm Crap App" 40 fillwrap)
+     (text-view (make-id "splash-about") "Blah blah" 20 fillwrap)))
+   (lambda (activity arg)
+     (activity-layout activity))
+   (lambda (activity arg) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity requestcode resultcode) '()))
+
   (activity
    "main"
-    (vert
-     (text-view (make-id "title") "Farm Crap App" 40 fillwrap)
-     (text-view (make-id "title") "Your fields" 30 fillwrap)
-     (linear-layout
-      (make-id "main-field-list")
-      'vertical
-      (layout 'fill-parent 'fill-parent 1 'left)
-      (build-field-buttons))
-     (spacer 20)
-     (button (make-id "f3") "New field" 20 fillwrap
-             (lambda ()
-               (list
-                (start-activity "newfield" 2 ""))))
-     (text-view (make-id "measure-text") "Measurement units" 20 fillwrap)
-     (spinner (make-id "units") (list metric imperial) fillwrap
-              (lambda (v)
-                (mutate-units! v)
-                (list)))
-     (button (make-id "f2") "Calculator" 20 fillwrap
-             (lambda () (list (start-activity "calc" 2 ""))))
-     (button (make-id "about-button") "About" 20 fillwrap
-             (lambda ()
-               (list
-                (start-activity "about" 2 "")))))
+   (vert
+    (text-view (make-id "title") "Farm Crap App" 40 fillwrap)
+    (text-view (make-id "title") "Your fields" 30 fillwrap)
+    (linear-layout
+     (make-id "main-field-list")
+     'vertical
+     (layout 'fill-parent 'fill-parent 1 'left)
+     (build-field-buttons))
+    (spacer 20)
+    (button (make-id "f3") "New field" 20 fillwrap
+            (lambda ()
+              (list
+               (start-activity "newfield" 2 ""))))
+    (text-view (make-id "measure-text") "Measurement units" 20 fillwrap)
+    (spinner (make-id "units") (list metric imperial) fillwrap
+             (lambda (v)
+               (mutate-units! v)
+               (list)))
+    (button (make-id "f2") "Calculator" 20 fillwrap
+            (lambda () (list (start-activity "calc" 2 ""))))
+    (button (make-id "email-button") "Export" 20 fillwrap
+            (lambda ()
+              (list
+               (start-activity "email" 2 ""))))
+    (button (make-id "about-button") "About" 20 fillwrap
+            (lambda ()
+              (list
+               (start-activity "about" 2 "")))))
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
@@ -622,63 +653,86 @@
                      (build-field-buttons)))))
 
   (activity
-   "calc"
-    (vert
-     (text-view (make-id "title") "Crap Calculator" 40 fillwrap)
+   "email"
+   (vert
+    (text-view (make-id "measure-text") "Email address to send to" 20 fillwrap)
+    (edit-text (make-id "email") (current-email) 20 fillwrap
+               (lambda (v)
+                 (mutate-email! v)))
+    (button (make-id "email-button") "Email" 20 fillwrap
+            (lambda ()
+              (list
+               (send-mail (current-email) "From your Crap Calculator" "hello"))))
+    (button (make-id "finished") "Done" 20 fillwrap
+            (lambda () (list (finish-activity 99)))))
+   (lambda (activity arg)
+     (activity-layout activity))
+   (lambda (activity arg) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity requestcode resultcode) '()))
 
-     (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
-     (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
-              (lambda (v)
-                (update-seek-mul! v)
-                (append
-                 (update-type! "c" v)
-                 (list
-                  (update-widget 'spinner (get-id "cquality") 'array
-                                 (cond
-                                  ((equal? v cattle) (list "2" "6" "10"))
+
+  (activity
+   "calc"
+   (vert
+    (text-view (make-id "title") "Crap Calculator" 40 fillwrap)
+
+    (text-view (make-id "manure-text") "Manure type" 15 fillwrap)
+    (spinner (make-id "manure") (list cattle FYM pig poultry) fillwrap
+             (lambda (v)
+               (update-seek-mul! v)
+               (append
+                (update-type! "c" v)
+                (list
+                 (update-widget 'spinner (get-id "cquality") 'array
+                                (cond
+                                 ((equal? v cattle) (list "2" "6" "10"))
                                   ((equal? v pig) (list "2" "4" "6"))
                                   ((equal? v poultry) (list layer broiler))
                                   ((equal? v FYM) (list fresh other))))
 
+                 (update-widget 'image-view (get-id "example") 'image
+                                (find-image (calc-type (current-calc))
+                                            (calc-amount (current-calc))))))))
+
+    (horiz
+     (vert
+      (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
+      (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
+               (lambda (v) (update-soil! "c" v))))
+     (vert
+      (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
+      (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
+               (lambda (v) (update-crop! "c" v)))))
+
+    (horiz
+     (vert
+      (text-view (make-id "season-text") "Season" 15 fillwrap)
+      (spinner (make-id "season") (list autumn winter spring summer) fillwrap
+               (lambda (v) (update-season! "c" v))))
+     (vert
+      (text-view (make-id "quality-text") "Quality" 15 fillwrap)
+      (spinner (make-id "cquality") (list "2" "4" "6") fillwrap
+                (lambda (v) (update-quality! "c" v)))))
+
+    (text-view (make-id "amount-text") "Amount" 15 fillwrap)
+    (seek-bar (make-id "amount") 100 fillwrap
+              (lambda (v)
+                (append
+                 (update-amount! "c" v)
+                 (list
                   (update-widget 'image-view (get-id "example") 'image
                                  (find-image (calc-type (current-calc))
                                              (calc-amount (current-calc))))))))
 
-     (horiz
-      (vert
-       (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
-       (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
-               (lambda (v) (update-soil! "c" v))))
-      (vert
-       (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
-       (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
-                (lambda (v) (update-crop! "c" v)))))
-
-     (horiz
-      (vert
-       (text-view (make-id "season-text") "Season" 15 fillwrap)
-       (spinner (make-id "season") (list autumn winter spring summer) fillwrap
-               (lambda (v) (update-season! "c" v))))
-      (vert
-       (text-view (make-id "quality-text") "Quality" 15 fillwrap)
-       (spinner (make-id "cquality") (list "2" "4" "6") fillwrap
-                (lambda (v) (update-quality! "c" v)))))
-
-     (text-view (make-id "amount-text") "Amount" 15 fillwrap)
-     (seek-bar (make-id "amount") 100 fillwrap
-               (lambda (v)
-                 (append
-                  (update-amount! "c" v)
-                  (list
-                   (update-widget 'image-view (get-id "example") 'image
-                                  (find-image (calc-type (current-calc))
-                                              (calc-amount (current-calc))))))))
-
-     (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
-     (horiz
-      (text-view (make-id "nt") "N/ha" 30 fillwrap)
-      (text-view (make-id "pt") "P/ha" 30 fillwrap)
-      (text-view (make-id "kt") "K/ha" 30 fillwrap))
+    (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
+    (horiz
+     (text-view (make-id "nt") "N/ha" 30 fillwrap)
+     (text-view (make-id "pt") "P/ha" 30 fillwrap)
+     (text-view (make-id "kt") "K/ha" 30 fillwrap))
      (horiz
       (text-view (make-id "cna") "12" 30
                  (layout 'fill-parent 'fill-parent 1 'centre))

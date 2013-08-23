@@ -65,6 +65,8 @@ public class starwisp extends StarwispActivity
         ActivityManager.Register("camera",CameraActivity.class);
         ActivityManager.Register("eventview",EventViewActivity.class);
         ActivityManager.Register("about",AboutActivity.class);
+        ActivityManager.Register("splash",SplashActivity.class);
+        ActivityManager.Register("email",EmailActivity.class);
     };
 
 

@@ -63,6 +63,7 @@ import android.content.DialogInterface;
 import android.app.TimePickerDialog;
 import android.app.DatePickerDialog;
 import android.app.AlertDialog;
+import android.content.Intent;
 import java.util.Calendar;
 
 import org.json.JSONException;
@@ -394,6 +395,25 @@ public class StarwispBuilder
                     }
                 }
                 return;
+            }
+
+            if (token.equals("send-email")) {
+                final String to = arr.getString(3);
+                final String subject = arr.getString(4);
+                final String body = arr.getString(5);
+
+                Log.i("starwisp","sending email to"+to);
+
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType("message/rfc822");
+                i.putExtra(Intent.EXTRA_EMAIL, to);
+                i.putExtra(Intent.EXTRA_SUBJECT, subject);
+                i.putExtra(Intent.EXTRA_TEXT, body);
+                try {
+                    ctx.startActivity(Intent.createChooser(i, "Send mail..."));
+                } catch (android.content.ActivityNotFoundException ex) {
+                    Toast.makeText(ctx, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+                }
             }
 
             if (token.equals("date-picker-dialog")) {

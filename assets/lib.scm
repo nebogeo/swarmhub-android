@@ -192,9 +192,10 @@
      ((null? l) s)
      (else
       (_ (cdr l)
-         (string-append s
-                        (if (not (string=? s "")) ", " "")
-                        (scheme->json (car l)))))))
+         (string-append
+          s
+          (if (not (string=? s "")) ", " "")
+          (scheme->json (car l)))))))
   (string-append "[" (_ l "") "]"))
 
 ; ((one . 1) (two . "three")) -> { "one": 1, "two": "three }
@@ -287,6 +288,7 @@
 (define (make-directory name) (list "make-directory" 0 "make-directory" name))
 ;; treat this like a dialog so the callback fires
 (define (list-files name path fn) (list "list-files" 0 "list-files" name fn path))
+(define (send-mail to subject body) (list "send-mail" 0 "send-mail" to subject body))
 
 (define (time-picker-dialog name fn)
   (list "time-picker-dialog" 0 "time-picker-dialog" name fn))
