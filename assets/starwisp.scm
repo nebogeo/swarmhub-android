@@ -544,11 +544,11 @@
                (list
                 (list x y)
                 (cons (drawlist-line colour
-                                     2
+                                     5
                                      (list (car last-point) (cadr last-point)
                                            x y))
                       points-list))))
-           (list (list 0 200) '())
+           (list (list -10 200) '())
            events))))
 
 (define (month->text m)
@@ -576,7 +576,7 @@
           (drawlist-text (number->string y)
                          (- x (/ year-width 2))
                          180 '(150 150 150) 20 "vertical")
-          (drawlist-line '(50 50 50) 1
+          (drawlist-line '(0 0 0) 1
                          (list x 0 x 200)))
          (_y year-width (+ x year-width) (+ y 1)))))
 
@@ -587,8 +587,8 @@
          (list
           (drawlist-text (month->text (+ m 1))
                          (- x (/ month-width 2))
-                         180 '(150 150 150) 20 "vertical")
-          (drawlist-line '(50 50 50) 1
+                         180 '(0 0 0) 20 "vertical")
+          (drawlist-line '(0 0 0) 1
                          (list x 0 x 200)))
          (_m month-width (+ x month-width) (modulo (+ m 1) 12)))))
 
@@ -612,11 +612,11 @@
                (max (date->day (event-date (list-ref events (- (length events) 1))))))
            (append
             (build-t-scale (event-date (car events)) min max)
-            (build-lines events min max '(255 0 0) 0)
-            (build-lines events min max '(0 255 0) 1)
-            (build-lines events min max '(0 0 255) 2)))
+            (build-lines events min max '(127 0 0) 0)
+            (build-lines events min max '(0 127 0) 1)
+            (build-lines events min max '(0 0 127) 2)))
          (list (drawlist-text "Not enough events for graph"
-                              20 105 '(150 150 150) 20 "horizontal"))))
+                              20 105 '(0 0 0) 20 "horizontal"))))
    (list
     (drawlist-line '(0 0 0) 5 (list 0 0 320 0))
     (drawlist-line '(0 0 0) 5 (list 0 200 320 200)))))
@@ -689,6 +689,7 @@
              (start-activity "eventview" 2 "")))))
        (field-events (current-field)))))
 
+;; just for graph so don't have to be accurate!!!
 (define (date->day d)
   (+ (* (list-ref d 2) 360)
      (* (list-ref d 1) 30)

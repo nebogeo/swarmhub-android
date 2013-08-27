@@ -102,7 +102,7 @@ class StarwispCanvas extends SurfaceView implements SurfaceHolder.Callback {
 
         Paint myPaint = new Paint();
         myPaint.setStrokeWidth(0);
-        myPaint.setColor(Color.WHITE);
+        myPaint.setColor(Color.rgb(127,127,127));
         canvas.drawRect(0, 0, getWidth(), getHeight(), myPaint);
 
         try {
