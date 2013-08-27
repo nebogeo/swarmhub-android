@@ -9,6 +9,7 @@
                  >
 
         <activity android:name="starwisp"
+                  android:noHistory="true"
                   android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +24,7 @@
         <activity android:name="CameraActivity"></activity>
         <activity android:name="EventViewActivity"></activity>
         <activity android:name="AboutActivity"></activity>
-        <activity android:name="SplashActivity"></activity>
+        <activity android:name="MainActivity"></activity>
         <activity android:name="EmailActivity"></activity>
     </application>
 

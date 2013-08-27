@@ -19,12 +19,12 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
 
-public class SplashActivity extends StarwispActivity
+public class MainActivity extends StarwispActivity
 {
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
-        m_Name = "splash";
+        m_Name = "main";
         super.onCreate(savedInstanceState);
     }
 }

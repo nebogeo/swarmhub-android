@@ -397,19 +397,31 @@ public class StarwispBuilder
                 return;
             }
 
-            if (token.equals("send-email")) {
-                final String to = arr.getString(3);
+            if (token.equals("send-mail")) {
+                final String to[] = new String[1];
+                to[0]=arr.getString(3);
                 final String subject = arr.getString(4);
                 final String body = arr.getString(5);
-
-                Log.i("starwisp","sending email to"+to);
 
                 Intent i = new Intent(Intent.ACTION_SEND);
                 i.setType("message/rfc822");
                 i.putExtra(Intent.EXTRA_EMAIL, to);
                 i.putExtra(Intent.EXTRA_SUBJECT, subject);
                 i.putExtra(Intent.EXTRA_TEXT, body);
-                try {
+
+/*                final String attachments = arr.getString(6);
+
+                ArrayList<Uri> uris = new ArrayList<Uri>();
+                //convert from paths to Android friendly Parcelable Uri's
+                for (String file : filePaths)
+                {
+                    File fileIn = new File(file);
+                    Uri u = Uri.fromFile(fileIn);
+                    uris.add(u);
+                }
+                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+*/
+               try {
                     ctx.startActivity(Intent.createChooser(i, "Send mail..."));
                 } catch (android.content.ActivityNotFoundException ex) {
                     Toast.makeText(ctx, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
@@ -473,6 +485,11 @@ public class StarwispBuilder
 
             if (token.equals("start-activity")) {
                 ActivityManager.StartActivity(ctx,arr.getString(3),arr.getInt(4),arr.getString(5));
+                return;
+            }
+
+            if (token.equals("start-activity-goto")) {
+                ActivityManager.StartActivityGoto(ctx,arr.getString(3),arr.getString(4));
                 return;
             }
 

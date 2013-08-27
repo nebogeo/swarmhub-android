@@ -26,8 +26,7 @@ import android.content.Context;
 import android.view.ViewGroup;
 import android.view.View;
 
-public class ActivityManager
-{
+public class ActivityManager {
     static private HashMap<String,Class> m_Activities;
 
     static {
@@ -55,7 +54,7 @@ public class ActivityManager
         }
     }
 
-    static public void StartActivityOneWay(Activity src, String name, String arg)
+    static public void StartActivityGoto(Activity src, String name, String arg)
     {
         Class ActClass = m_Activities.get(name);
         if (ActClass == null)
@@ -69,3 +68,4 @@ public class ActivityManager
             src.startActivity(intent);
         }
     }
+}

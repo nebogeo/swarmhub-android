@@ -17,9 +17,23 @@
 (define (filter fn l)
   (foldl
    (lambda (i r)
-     (if (fn i) (cons i r) r))
+     (if (fn i) (append r (list i)) r))
    '()
    l))
+
+(define (sort lst fn)
+  (if (null? lst)
+      '()
+      (insert (car lst) fn
+              (sort (cdr lst) fn))))
+
+(define (insert elt fn sorted-lst)
+  (if (null? sorted-lst)
+      (list elt)
+      (if (fn elt (car sorted-lst))
+          (cons elt sorted-lst)
+          (cons (car sorted-lst)
+                (insert elt fn (cdr sorted-lst))))))
 
 ;; utils funcs for using lists as sets
 
@@ -283,6 +297,7 @@
 (define (canvas-drawlist t) (list-ref t 3))
 
 (define (drawlist-line colour width points) (list "line" colour width points))
+(define (drawlist-text text x y colour size align) (list "text" text x y colour size align))
 
 (define (toast msg) (list "toast" 0 "toast" msg))
 (define (make-directory name) (list "make-directory" 0 "make-directory" name))
@@ -301,6 +316,7 @@
 (define (dialog-fn d) (list-ref d 4))
 
 (define (start-activity act request arg) (list "start-activity" 0 "start-activity" act request arg))
+(define (start-activity-goto act request arg) (list "start-activity" 0 "start-activity-goto" act arg))
 (define (finish-activity result) (list "finish-activity" 0 "finish-activity" result))
 
 (define (update-widget type id token value) (list type id token value))

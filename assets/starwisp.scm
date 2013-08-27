@@ -42,6 +42,10 @@
 (define broiler "Broiler litter")
 (define metric "Metric")
 (define imperial "Imperial")
+(define DM2 "2% DM")
+(define DM4 "4% DM")
+(define DM6 "6% DM")
+(define DM10 "10% DM")
 
 (define images
   (list
@@ -135,15 +139,15 @@
    (nutrients
     cattle "m3/ha" 100
     (list
-     (quality "2" (nitrogen (soil (crop 8 16) (crop 48 56))  48 72 56) 30 220)
-     (quality "6" (nitrogen (soil (crop 13 26) (crop 65 78)) 65 91 65) 60 290)
-     (quality "10" (nitrogen (soil (crop 18 36) (crop 72 90)) 72 90 72) 90 360)))
+     (quality DM2 (nitrogen (soil (crop 8 16) (crop 48 56))  48 72 56) 30 220)
+     (quality DM6 (nitrogen (soil (crop 13 26) (crop 65 78)) 65 91 65) 60 290)
+     (quality DM10 (nitrogen (soil (crop 18 36) (crop 72 90)) 72 90 72) 90 360)))
    (nutrients
     pig "m3/ha" 50
     (list
-     (quality "2" (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
-     (quality "4" (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
-     (quality "6" (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
+     (quality DM2 (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
+     (quality DM4 (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
+     (quality DM6 (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
    (nutrients
     poultry "tons/ha" 10
     (list
@@ -218,7 +222,6 @@
 ;; amount is from the slider
 (define (process-nutrients amount units quantity nutrients)
   (let ((amount (imperial->metric amount units)))
-    (display amount)(newline)
     (map
      (lambda (q)
        (rounding (metric->imperial (* amount (/ q quantity)) units)))
@@ -258,7 +261,11 @@
 (define (field-modify-events f v) (list-replace f 3 v))
 
 (define (field-add-event f event)
-  (field-modify-events f (append (field-events f) (list event))))
+  (field-modify-events
+   f
+   (sort (append (field-events f) (list event))
+         (lambda (a b)
+           (date< (event-date a) (event-date b))))))
 
 (define (field-remove-event f id)
   (field-modify-events
@@ -269,7 +276,7 @@
 
 (define (state)
   (list
-   (calc pig 25 "2" autumn normal mediumheavy)
+   (calc pig 25 DM2 autumn normal mediumheavy)
    (empty-field)
    (saved-data-load)
    (list date-day date-month date-year)
@@ -291,15 +298,16 @@
 (define (state-modify-seek-mul s v) (list-replace s 5 v))
 
 (define (saved-data fields)
-  (list fields 0 metric ""))
-(define (saved-data-fields f) (list-ref f 0))
-(define (saved-data-modify-fields f v) (list-replace f 0 v))
-(define (saved-data-next-event-id f) (list-ref f 1))
-(define (saved-data-modify-next-event-id f v) (list-replace f 1 v))
-(define (saved-data-units f) (list-ref f 2))
-(define (saved-data-modify-units f v) (list-replace f 2 v))
-(define (saved-data-email f) (list-ref f 3))
-(define (saved-data-modify-email f v) (list-replace f 3 v))
+  (list 0 fields 0 metric "your email"))
+(define (saved-data-version f) (list-ref f 0))
+(define (saved-data-fields f) (list-ref f 1))
+(define (saved-data-modify-fields f v) (list-replace f 1 v))
+(define (saved-data-next-event-id f) (list-ref f 2))
+(define (saved-data-modify-next-event-id f v) (list-replace f 2 v))
+(define (saved-data-units f) (list-ref f 3))
+(define (saved-data-modify-units f v) (list-replace f 3 v))
+(define (saved-data-email f) (list-ref f 4))
+(define (saved-data-modify-email f v) (list-replace f 4 v))
 
 (define (saved-data-modify-field fn name f)
   (saved-data-modify-fields
@@ -328,7 +336,11 @@
         (saved-data-save (saved-data '()))
         (let ((r (read f)))
           (close-input-port f)
-          r))))
+          ;; check versioning
+          (if (not (number? (list-ref r 0)))
+              ;; version 0
+              (append (list 0) r (list "your email"))
+              r)))))
 
 (define (calc type amount quality season crop soil)
   (list type amount quality season crop soil))
@@ -429,8 +441,55 @@
      (else (_ (cdr f)))))
   (_ (get-fields)))
 
+(define (csv-headings)
+  (string-append
+   "Field name, "
+   "Soil, "
+   "Crop, "
+   "Manure, "
+   "Date, "
+   "N, P, K, "
+   "Amount, "
+   "Quality, "
+   "Season, "
+   "Units\n"))
+
+(define (stringify-event event name soil crop)
+  (string-append
+   name ", "
+   soil ", "
+   crop ", "
+   (event-type event) ", "
+   (date->string (event-date event)) ", "
+   (number->string (list-ref (event-nutrients event) 0)) ", "
+   (number->string (list-ref (event-nutrients event) 1)) ", "
+   (number->string (list-ref (event-nutrients event) 2)) ", "
+   (number->string (event-amount event)) ", "
+   (event-quality event) ", "
+   (event-season event) ", "
+   (event-units event)))
+
+(define (stringify-field field)
+  (foldl
+   (lambda (event str)
+     (string-append
+      str
+      (stringify-event
+       event
+       (field-name field)
+       (field-soil field)
+       (field-crop field)) "\n"))
+   ""
+   (field-events field)))
+
+(define (stringify-fields)
+  (foldl
+   (lambda (field str)
+     (string-append str (stringify-field field) "\n"))
+   (csv-headings)
+   (get-fields)))
+
 (define (calc-nutrients)
-  (display "current seek mul ")(display (current-seek-mul))(newline)
   (let* ((type (calc-type (state-calc gstate)))
          (amount (* (current-seek-mul) (calc-amount (state-calc gstate))))
          (quality (calc-quality (state-calc gstate)))
@@ -471,29 +530,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (build-lines events colour n)
-  (cadr (foldl
-         (lambda (event r)
-           (let* ((last-point (car r))
-                  (points-list (cadr r))
-                  (x (* (length points-list) 30))
-                  (y (- 200 (list-ref (event-nutrients event) n))))
-             (list
-              (list x y)
-              (cons (drawlist-line colour
-                                   2
-                                   (list (car last-point) (cadr last-point)
-                                         x y))
-                    points-list))))
-         (list (list 0 200) '())
-         events)))
+(define graph-width 320)
+
+(define (build-lines events min max colour n)
+  (let ((twidth (- max min)))
+    (cadr (foldl
+           (lambda (event r)
+             (let* ((t (date->day (event-date event)))
+                    (last-point (car r))
+                    (points-list (cadr r))
+                    (x (* graph-width (/ (- t min) twidth)))
+                    (y (- 200 (list-ref (event-nutrients event) n))))
+               (list
+                (list x y)
+                (cons (drawlist-line colour
+                                     2
+                                     (list (car last-point) (cadr last-point)
+                                           x y))
+                      points-list))))
+           (list (list 0 200) '())
+           events))))
+
+(define (month->text m)
+  (cond
+   ((eqv? m 1) "January")
+   ((eqv? m 2) "Febuary")
+   ((eqv? m 3) "March")
+   ((eqv? m 4) "April")
+   ((eqv? m 5) "May")
+   ((eqv? m 6) "June")
+   ((eqv? m 7) "July")
+   ((eqv? m 8) "August")
+   ((eqv? m 9) "September")
+   ((eqv? m 10) "October")
+   ((eqv? m 11) "November")
+   ((eqv? m 12) "December")))
+
+
+(define (build-t-scale first min max)
+  (define (_y year-width x y)
+    (if (> (- x (/ year-width 2)) graph-width)
+        '()
+        (append
+         (list
+          (drawlist-text (number->string y)
+                         (- x (/ year-width 2))
+                         180 '(150 150 150) 20 "vertical")
+          (drawlist-line '(50 50 50) 1
+                         (list x 0 x 200)))
+         (_y year-width (+ x year-width) (+ y 1)))))
+
+  (define (_m month-width x m)
+    (if (> (- x (/ month-width 2)) graph-width)
+        '()
+        (append
+         (list
+          (drawlist-text (month->text (+ m 1))
+                         (- x (/ month-width 2))
+                         180 '(150 150 150) 20 "vertical")
+          (drawlist-line '(50 50 50) 1
+                         (list x 0 x 200)))
+         (_m month-width (+ x month-width) (modulo (+ m 1) 12)))))
+
+  (let* ((twidth (- max min))
+         (month-width (* (/ 30 twidth) graph-width))
+         (first-month-x (* (/ (- 30 (list-ref first 0)) twidth) graph-width)))
+    (if (<= twidth 0)
+        '()
+        (if (> month-width 20)
+            (_m month-width first-month-x (- (list-ref first 1) 1))
+            (_y
+             (* (/ 365 twidth) graph-width)
+             (* (/ (- 12 (list-ref first 1)) twidth) graph-width)
+             (list-ref first 2))))))
 
 (define (build-graph)
-  (let ((events (field-events (current-field))))
-    (append
-     (build-lines events '(255 127 127) 0)
-     (build-lines events '(127 255 127) 1)
-     (build-lines events '(127 127 255) 2))))
+  (append
+   (let ((events (field-events (current-field))))
+     (if (> (length events) 1)
+         (let ((min (date->day (event-date (car events))))
+               (max (date->day (event-date (list-ref events (- (length events) 1))))))
+           (append
+            (build-t-scale (event-date (car events)) min max)
+            (build-lines events min max '(255 0 0) 0)
+            (build-lines events min max '(0 255 0) 1)
+            (build-lines events min max '(0 0 255) 2)))
+         (list (drawlist-text "Not enough events for graph"
+                              20 105 '(150 150 150) 20 "horizontal"))))
+   (list
+    (drawlist-line '(0 0 0) 5 (list 0 0 320 0))
+    (drawlist-line '(0 0 0) 5 (list 0 200 320 200)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,6 +689,26 @@
              (start-activity "eventview" 2 "")))))
        (field-events (current-field)))))
 
+(define (date->day d)
+  (+ (* (list-ref d 2) 360)
+     (* (list-ref d 1) 30)
+     (list-ref d 0)))
+
+(define (date< a b)
+  (cond
+   ((< (list-ref a 2) (list-ref b 2)) #t)
+   ((> (list-ref a 2) (list-ref b 2)) #f)
+   (else ;; year is the same
+    (cond
+     ((< (list-ref a 1) (list-ref b 1)) #t)
+     ((> (list-ref a 1) (list-ref b 1)) #f)
+     (else ;; month is the same
+      (cond
+       ((< (list-ref a 0) (list-ref b 0)) #t)
+       ((> (list-ref a 0) (list-ref b 0)) #f)
+       (else #f)))))))
+
+
 (define (date->string d)
   (string-append
    (number->string (list-ref d 0))
@@ -590,14 +736,24 @@
      (eqv? (list-ref d 1) 1)
      (eqv? (list-ref d 1) 2)) winter)))
 
+(define centre-layout (layout 'wrap-content 'wrap-content 1 'centre))
+
 (define-activity-list
 
   (activity
    "splash"
    (vert
-    (vert
-     (text-view (make-id "splash-title") "The Farm Crap App" 40 fillwrap)
-     (text-view (make-id "splash-about") "Blah blah" 20 fillwrap)))
+    (text-view (make-id "splash-title") "The Farm Crap App" 40 centre-layout)
+    (text-view (make-id "splash-about") "Manage your muck with the Farm Crap App" 20 centre-layout)
+    (spacer 20)
+    (text-view (make-id "splash-blurb") "Developed by FoAM Kernow on behalf of the SWARM Knowledge Hub, a Rural Development Programme for England (RDPE) initiative managed by Duchy College Rural Business School." 15 centre-layout)
+    (spacer 20)
+    (text-view (make-id "splash-link") "www.swarmhub.co.uk" 15 centre-layout)
+    (spacer 20)
+    (image-view (make-id "about-logo") "logo_duchy" fillwrap)
+    (spacer 20)
+    (button (make-id "f2") "Go to app" 20 fillwrap
+            (lambda () (list (start-activity-goto "main" 2 "")))))
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg) '())
@@ -655,14 +811,16 @@
   (activity
    "email"
    (vert
-    (text-view (make-id "measure-text") "Email address to send to" 20 fillwrap)
+    (text-view (make-id "title") "Export" 40 fillwrap)
+    (text-view (make-id "measure-text") "Email address to field data to" 20 fillwrap)
     (edit-text (make-id "email") (current-email) 20 fillwrap
                (lambda (v)
                  (mutate-email! v)))
     (button (make-id "email-button") "Email" 20 fillwrap
             (lambda ()
               (list
-               (send-mail (current-email) "From your Crap Calculator" "hello"))))
+               (send-mail (current-email) "From your Crap Calculator"
+                          (stringify-fields)))))
     (button (make-id "finished") "Done" 20 fillwrap
             (lambda () (list (finish-activity 99)))))
    (lambda (activity arg)
@@ -689,8 +847,8 @@
                 (list
                  (update-widget 'spinner (get-id "cquality") 'array
                                 (cond
-                                 ((equal? v cattle) (list "2" "6" "10"))
-                                  ((equal? v pig) (list "2" "4" "6"))
+                                 ((equal? v cattle) (list DM2 DM6 DM10))
+                                  ((equal? v pig) (list DM2 DM4 DM6))
                                   ((equal? v poultry) (list layer broiler))
                                   ((equal? v FYM) (list fresh other))))
 
@@ -715,7 +873,7 @@
                (lambda (v) (update-season! "c" v))))
      (vert
       (text-view (make-id "quality-text") "Quality" 15 fillwrap)
-      (spinner (make-id "cquality") (list "2" "4" "6") fillwrap
+      (spinner (make-id "cquality") (list DM2 DM4 DM6) fillwrap
                 (lambda (v) (update-quality! "c" v)))))
 
     (text-view (make-id "amount-text") "Amount" 15 fillwrap)
@@ -728,7 +886,8 @@
                                  (find-image (calc-type (current-calc))
                                              (calc-amount (current-calc))))))))
 
-    (text-view (make-id "camount-value") "4500 gallons" 20 fillwrap)
+    (text-view (make-id "camount-value") "4500 gallons" 30
+               (layout 'wrap-content 'wrap-content 1 'centre))
     (horiz
      (text-view (make-id "nt") "N/ha" 30 fillwrap)
      (text-view (make-id "pt") "P/ha" 30 fillwrap)
@@ -903,14 +1062,14 @@
                                                (calc-amount (current-calc))))
                     (update-widget 'spinner (get-id "quality") 'array
                                    (cond
-                                    ((equal? v cattle) (list "2" "6" "10"))
-                                    ((equal? v pig) (list "2" "4" "6"))
+                                    ((equal? v cattle) (list DM2 DM6 DM10))
+                                    ((equal? v pig) (list DM2 DM4 DM6))
                                     ((equal? v poultry) (list layer broiler))
                                     ((equal? v FYM) (list fresh other)))))))))
 
       (vert
        (text-view (make-id "quality-text") "Quality" 15 fillwrap)
-       (spinner (make-id "quality") (list "2" "4" "6") fillwrap
+       (spinner (make-id "quality") (list DM2 DM4 DM6) fillwrap
                 (lambda (v) (update-quality! "fc" v)))))
      (text-view (make-id "amount-text") "Amount" 15 fillwrap)
      (seek-bar (make-id "amount") 100 fillwrap
@@ -920,7 +1079,8 @@
                      (find-image (calc-type (current-calc))
                                  (calc-amount (current-calc))))
                  (update-amount! "fc" v))))
-     (text-view (make-id "fcamount-value") "4500 gallons" 20 fillwrap)
+     (text-view (make-id "fcamount-value") "4500 gallons" 30
+                (layout 'wrap-content 'wrap-content 1 'centre))
 
      (horiz
        (text-view (make-id "nt") "N/ha" 30 fillwrap)
@@ -1157,12 +1317,16 @@
    (vert
     (text-view (make-id "about-title") "About" 40 fillwrap)
     (text-view (make-id "about-text")
-               "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse turpis magna, pulvinar dignissim feugiat a, mattis vel ipsum."
+               "Welcome to the Farm Crap App designed to help farmers make the most of your manure (slurry,  FYM and poultry litter). The app contains 3 components; the calculator, the image library (to which you can add your own photos), and the record sheets. The calculator will determine the amount of crop-available key nutrients (N, P & K) within the manure at different spreading rates helping you decide how much to spread in order to meet the crop requirements, and also what this looks like."
+               15 fillwrap)
+    (text-view (make-id "about-text2")
+               "The image library can be used as a visual reference guide to estimate the spreading rate of manure already applied to the field and therefore calculate the amount of crop available nutrients that have been applied."
+               15 fillwrap)
+    (text-view (make-id "about-text3")
+               "The Farm Crap App can also be used to keep records of spreading events per field, how much manure was spread and what this translates to in terms of applied nutrients. You can also upload a photo of the spreading event. The records can be emailed to the farmer to be stored on his computer."
                15 fillwrap)
     (spacer 20)
-    (image-view (make-id "about-logo") "logo_duchy" fillwrap)
-    (spacer 20)
-    (button (make-id "back") "Back" 20 fillwrap
+    (button (make-id "back") "Get started!" 20 fillwrap
             (lambda ()
               (list
                (update-widget 'camera-preview (get-id "camera") 'shutdown 0)
