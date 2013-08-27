@@ -56,6 +56,7 @@ import android.widget.DatePicker;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera;
 import java.io.FileNotFoundException;
+import android.net.Uri;
 import java.util.TimeZone;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -423,24 +424,26 @@ public class StarwispBuilder
                 final String body = arr.getString(5);
 
                 Intent i = new Intent(Intent.ACTION_SEND);
-                i.setType("message/rfc822");
+                i.setType("plain/text");
                 i.putExtra(Intent.EXTRA_EMAIL, to);
                 i.putExtra(Intent.EXTRA_SUBJECT, subject);
                 i.putExtra(Intent.EXTRA_TEXT, body);
 
-/*                final String attachments = arr.getString(6);
+                JSONArray attach = arr.getJSONArray(6);
 
-                ArrayList<Uri> uris = new ArrayList<Uri>();
+/*                ArrayList<Uri> uris = new ArrayList<Uri>();
                 //convert from paths to Android friendly Parcelable Uri's
-                for (String file : filePaths)
+                for (int a=0; a<attach.length(); a++)
                 {
-                    File fileIn = new File(file);
+                    Log.i("starwisp",attach.getString(a));
+                    File fileIn = new File(attach.getString(a));
                     Uri u = Uri.fromFile(fileIn);
                     uris.add(u);
                 }
-                emailIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
 */
-               try {
+                //i.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+                i.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://"+attach.getString(0)));
+                try {
                     ctx.startActivity(Intent.createChooser(i, "Send mail..."));
                 } catch (android.content.ActivityNotFoundException ex) {
                     Toast.makeText(ctx, "There are no email clients installed.", Toast.LENGTH_SHORT).show();

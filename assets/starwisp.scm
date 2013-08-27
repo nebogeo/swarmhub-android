@@ -342,6 +342,13 @@
               (append (list 0) r (list "your email"))
               r)))))
 
+(define (save-data filename d)
+  (let ((f (open-output-file (string-append dirname filename))))
+    (display d f)
+    (close-output-port f))
+  d)
+
+
 (define (calc type amount quality season crop soil)
   (list type amount quality season crop soil))
 
@@ -816,14 +823,18 @@
                  (mutate-email! v)))
     (button (make-id "email-button") "Email" 20 fillwrap
             (lambda ()
+              (save-data "fields.csv" (stringify-fields))
               (list
                (send-mail (current-email) "From your Crap Calculator"
-                          (stringify-fields)))))
+                          "Please find attached your field data."
+                          (list (string-append dirname "fields.csv"))))))
     (button (make-id "finished") "Done" 20 fillwrap
             (lambda () (list (finish-activity 99)))))
    (lambda (activity arg)
      (activity-layout activity))
-   (lambda (activity arg) '())
+   (lambda (activity arg)
+     (list
+      (update-widget 'edit-text (get-id "email") 'text (current-email))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
