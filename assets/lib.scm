@@ -257,11 +257,18 @@
 (define (camera-preview-layout t) (list-ref t 2))
 
 (define (text-view id text size layout) (list "text-view" id text size layout))
+(define (text-view-left id text size layout) (list "text-view" id text size layout "left"))
 (define (text-view-id t) (list-ref t 1))
 (define (text-view-text t) (list-ref t 2))
 (define (text-view-modify-text t v) (list-replace t 2 v))
 (define (text-view-size t) (list-ref t 3))
 (define (text-view-layout t) (list-ref t 4))
+
+(define (web-view id data layout) (list "web-view" id data layout))
+(define (web-view-id t) (list-ref t 1))
+(define (web-view-text t) (list-ref t 2))
+(define (web-view-modify-text t v) (list-replace t 2 v))
+(define (web-view-layout t) (list-ref t 3))
 
 (define (edit-text id text size layout listener) (list "edit-text" id text size layout listener))
 (define (edit-text-id t) (list-ref t 1))

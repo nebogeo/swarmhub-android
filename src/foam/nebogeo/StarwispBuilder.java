@@ -39,6 +39,7 @@ import android.widget.Spinner;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView;
 import android.widget.EditText;
+import android.webkit.WebView;
 import android.widget.Toast;
 import android.widget.Space;
 import android.view.ViewGroup;
@@ -193,9 +194,24 @@ public class StarwispBuilder
                 v.setText(arr.getString(2));
                 v.setTextSize(arr.getInt(3));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                if (arr.length()>5 && arr.getString(5).equals("left")) {
+                    v.setGravity(Gravity.LEFT);
+                } else {
+                    v.setGravity(Gravity.CENTER);
+                }
                 v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 parent.addView(v);
             }
+
+            if (type.equals("web-view")) {
+                WebView v = new WebView(ctx);
+                v.setId(arr.getInt(1));
+                v.setVerticalScrollBarEnabled(false);
+                v.loadData(arr.getString(2), "text/html", "utf-8");
+                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
+                parent.addView(v);
+            }
+
 
             if (type.equals("edit-text")) {
                 final EditText v = new EditText(ctx);
