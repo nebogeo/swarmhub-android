@@ -34,6 +34,7 @@
 
   <style name="StarwispTheme" parent="android:Theme.Light">
     <item name="android:textColor">@color/text</item>
+    <item name="android:textColorLink">#005500</item>
     <item name="android:windowBackground">@drawable/bg_style</item>
     <item name="android:colorBackground">@color/bg</item>
     <item name="android:buttonStyle">@style/StarwispButton</item>

@@ -746,13 +746,11 @@
     (text-view (make-id "splash-title") "The Farm Crap App" 40 centre-layout)
     (text-view (make-id "splash-about") "Manage your muck with the Farm Crap App" 20 centre-layout)
     (spacer 20)
-    (text-view (make-id "splash-blurb") "Developed by FoAM Kernow on behalf of the SWARM Knowledge Hub, a Rural Development Programme for England (RDPE) initiative managed by Duchy College Rural Business School." 15 centre-layout)
-    (spacer 20)
-    (text-view (make-id "splash-link") "www.swarmhub.co.uk" 15 centre-layout)
+    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 20 centre-layout)
     (spacer 20)
     (image-view (make-id "about-logo") "logo" fillwrap)
     (spacer 20)
-    (button (make-id "f2") "Go to app" 20 fillwrap
+    (button (make-id "f2") "Get started!" 20 fillwrap
             (lambda () (list (start-activity-goto "main" 2 "")))))
    (lambda (activity arg)
      (activity-layout activity))
@@ -1317,7 +1315,7 @@
    (vert
     (text-view (make-id "about-title") "About" 40 fillwrap)
     (text-view (make-id "about-text")
-               "Welcome to the Farm Crap App designed to help farmers make the most of your manure (slurry,  FYM and poultry litter). The app contains 3 components; the calculator, the image library (to which you can add your own photos), and the record sheets. The calculator will determine the amount of crop-available key nutrients (N, P & K) within the manure at different spreading rates helping you decide how much to spread in order to meet the crop requirements, and also what this looks like."
+               "Welcome to the Farm Crap App designed to help farmers make the most of your manure (slurry, FYM and poultry litter). The app contains 3 components; the calculator, the image library (to which you can add your own photos), and the record sheets. The calculator will determine the amount of crop-available key nutrients (N, P & K) within the manure at different spreading rates helping you decide how much to spread in order to meet the crop requirements, and also what this looks like."
                20 fillwrap)
     (spacer 20)
     (text-view (make-id "about-text2")
@@ -1325,7 +1323,7 @@
                20 fillwrap)
     (spacer 20)
     (text-view (make-id "about-text3")
-               "The Farm Crap App can also be used to keep records of spreading events per field, how much manure was spread and what this translates to in terms of applied nutrients. You can also upload a photo of the spreading event. The records can be emailed to the farmer to be stored on his computer."
+               "The Farm Crap App can also be used to keep records of spreading events per field, how much manure was spread and what this translates to in terms of applied nutrients. You can also upload a photo of the spreading event. The records can be emailed to you to be stored on your computer."
                20 fillwrap)
     (spacer 20)
     (button (make-id "back") "Get started!" 20 fillwrap

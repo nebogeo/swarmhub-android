@@ -49,7 +49,9 @@ import android.view.View;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.text.TextWatcher;
+import android.text.Html;
 import android.text.Editable;
+import android.text.method.LinkMovementMethod;
 import android.widget.DatePicker;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera;
@@ -191,8 +193,9 @@ public class StarwispBuilder
             if (type.equals("text-view")) {
                 TextView v = new TextView(ctx);
                 v.setId(arr.getInt(1));
-                v.setText(arr.getString(2));
+                v.setText(Html.fromHtml(arr.getString(2)));
                 v.setTextSize(arr.getInt(3));
+                v.setMovementMethod(LinkMovementMethod.getInstance());
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
                 if (arr.length()>5 && arr.getString(5).equals("left")) {
                     v.setGravity(Gravity.LEFT);
