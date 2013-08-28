@@ -15,15 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo
-;; finish graph
-;; order events
-;; about, logos etc
-;; app logo
-;; metric/imperial
-;; email data??
-
-
 (define cattle "Cattle Slurry")
 (define FYM "Farmyard Manure")
 (define pig "Pig Slurry")
@@ -229,11 +220,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (event id type date nutrients amount quality season crop soil units)
-  (list id type date nutrients amount quality season crop soil units))
+(define (event id type date nutrients amount quality season crop soil size units)
+  (list id type date nutrients amount quality season crop soil size units))
 
 (define (empty-event)
-  (event 0 "" (list 0 0 0) (list 0 0 0) 0 "" "" "" "" metric))
+  (event 0 "" (list 0 0 0) (list 0 0 0) 0 "" "" "" "" 0 metric))
 (define (event-id e) (list-ref e 0))
 (define (event-type e) (list-ref e 1))
 (define (event-date e) (list-ref e 2))
@@ -243,10 +234,11 @@
 (define (event-season e) (list-ref e 6))
 (define (event-crop e) (list-ref e 7))
 (define (event-soil e) (list-ref e 8))
-(define (event-units e) (list-ref e 9))
+(define (event-size e) (list-ref e 9))
+(define (event-units e) (list-ref e 10))
 
-(define (field name soil crop)
-  (list name soil crop '()))
+(define (field name soil crop size)
+  (list name soil crop '() size))
 
 (define (empty-field)
   (field "" "" "" '()))
@@ -259,6 +251,8 @@
 (define (field-modify-crop f v) (list-replace f 2 v))
 (define (field-events f) (list-ref f 3))
 (define (field-modify-events f v) (list-replace f 3 v))
+(define (field-size f) (list-ref f 4))
+(define (field-modify-size f v) (list-replace f 4 v))
 
 (define (field-add-event f event)
   (field-modify-events
@@ -451,19 +445,22 @@
 (define (csv-headings)
   (string-append
    "Field name, "
+   "Size, "
    "Soil, "
    "Crop, "
    "Manure, "
    "Date, "
    "N, P, K, "
    "Amount, "
+   "Total Amount, "
    "Quality, "
    "Season, "
    "Units\n"))
 
-(define (stringify-event event name soil crop)
+(define (stringify-event event name soil crop size)
   (string-append
    name ", "
+   (number->string size) ", "
    soil ", "
    crop ", "
    (event-type event) ", "
@@ -472,6 +469,7 @@
    (number->string (list-ref (event-nutrients event) 1)) ", "
    (number->string (list-ref (event-nutrients event) 2)) ", "
    (number->string (event-amount event)) ", "
+   (number->string (* size (event-amount event))) ", "
    (event-quality event) ", "
    (event-season event) ", "
    (event-units event)))
@@ -485,7 +483,8 @@
        event
        (field-name field)
        (field-soil field)
-       (field-crop field)) "\n"))
+       (field-crop field)
+       (field-size field)) "\n"))
    ""
    (field-events field)))
 
@@ -954,6 +953,23 @@
                   (lambda (s)
                     (state-modify-field
                      s (field-modify-crop (state-field s) v))))))
+
+      (text-view (make-id "field-size-text") "Field size" 15 fillwrap)
+
+      (seek-bar (make-id "field-size") 100 fillwrap
+                (lambda (v)
+                 (mutate-state!
+                  (lambda (s)
+                    (state-modify-field
+                     s (field-modify-size (state-field s) v))))
+                  (list
+                   (update-widget 'text-view (get-id "field-size-amount") 'text
+                                  (string-append (number->string v)
+                                                 (if (equal? (current-units) metric)
+                                                     " acres" " hectares"))))))
+
+      (text-view (make-id "field-size-amount") "" 15 fillwrap)
+
       (horiz
        (button (make-id "save") "Save" 20 fillwrap
                (lambda ()
@@ -968,7 +984,13 @@
 
     (lambda (activity arg)
       (activity-layout activity))
-    (lambda (activity arg) '())
+    (lambda (activity arg)
+      (list
+       (update-widget 'text-view (get-id "field-size-amount") 'text
+                      (string-append
+                       "50"
+                       (if (equal? (current-units) metric)
+                           " acres" " hectares")))))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
@@ -1043,7 +1065,7 @@
      (text-view (make-id "blurb") "Enter new crap spreading event" 20 fillwrap)
      (horiz
       (text-view (make-id "fc-date-text")
-                 (date->string (list date-day date-month date-year)) 30 fillwrap)
+                 (date->string (list date-day date-month date-year)) 20 fillwrap)
       (button (make-id "date") "Set date" 20 fillwrap
               (lambda ()
                 (list (date-picker-dialog
@@ -1111,6 +1133,8 @@
                 (let ((event-id (mutate-make-event-id!)))
                   (mutate-current-field!
                    (lambda (field)
+                     (display "adding event")(newline)
+                     (display (field-size field))(newline)
                      (field-add-event
                       field
                       (event
@@ -1123,6 +1147,7 @@
                        (calc-season (state-calc gstate))
                        (calc-crop (state-calc gstate))
                        (calc-soil (state-calc gstate))
+                       (field-size field)
                        (current-units))))))
 
                 (mutate-saved-data!
@@ -1170,11 +1195,13 @@
 
     (item "type" "Type")
     (item "date" "Date")
-    (item "amount" "Amount")
+    (item "eventview-amount" "Amount")
     (item "quality" "Quality")
     (item "season" "Season")
     (item "crop" "Crop")
     (item "soil" "Soil")
+    (item "size" "Size")
+    (item "total-amount" "Total Amount")
 
     (horiz
      (text-view (make-id "nt") "N/ha" 30 fillwrap)
@@ -1265,20 +1292,48 @@
            (update-widget 'text-view (get-id "nt") 'text "N/acre")
            (update-widget 'text-view (get-id "pt") 'text "P/acre")
            (update-widget 'text-view (get-id "kt") 'text "K/acre")))
-      (list
-       (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
-       (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
-       (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
-       (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
-       (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
+      (let ((type (event-type (current-event))))
+        (list
+         (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
+         (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
+         (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
+         (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
+         (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
 
-       (update-widget 'text-view (get-id "amount") 'text (number->string (event-amount (current-event))))
-       (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
-       (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
-       (update-widget 'text-view (get-id "crop") 'text (event-crop (current-event)))
-       (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
+         (update-widget 'text-view (get-id "eventview-amount") 'text
+                        (string-append
+                         (number->string (event-amount (current-event)))
+                         " "
+                         (if (equal? (event-units (current-event)) metric)
+                             (nutrients-units (find type nutrients-metric))
+                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+                                 "gallons/acre"
+                                 "tons/acre"))))
 
-       (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field))))))
+         (update-widget 'text-view (get-id "total-amount") 'text
+                        (string-append
+                         (number->string (* (event-size (current-event))
+                                            (event-amount (current-event))))
+                         " "
+                         (if (equal? (current-units) metric)
+                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+                                 "m3" "tonnes")
+                             ;; it's imperial
+                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+                                 "gallons"
+                                 "tonnes"))))
+
+         (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
+         (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
+         (update-widget 'text-view (get-id "crop") 'text (event-crop (current-event)))
+         (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
+         (update-widget 'text-view (get-id "size") 'text
+                        (string-append
+                         (number->string (event-size (current-event))) " "
+                         (if (equal? (event-units (current-event)) metric)
+                             "hectares"
+                             "acres")))
+         (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field)))))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())

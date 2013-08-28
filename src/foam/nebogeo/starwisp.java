@@ -89,7 +89,7 @@ public class starwisp extends StarwispActivity
         // tell scheme the date
         final Calendar c = Calendar.getInstance();
         int day = c.get(Calendar.DAY_OF_MONTH);
-        int month = c.get(Calendar.MONTH);
+        int month = c.get(Calendar.MONTH)+1;
         int year = c.get(Calendar.YEAR);
 
         // pass in a bunch of useful stuff
