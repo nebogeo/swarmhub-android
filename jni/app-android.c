@@ -21,7 +21,7 @@ void Java_foam_nebogeo_Scheme_nativeInit(JNIEnv* env)
 {
     app_alive = 1;
     sc=scheme_init_new();
-    FILE *log_file=fopen("/sdcard/starwisp-log.txt","w");
+    FILE *log_file=fopen("/sdcard/swarmhub/starwisp-log.txt","w");
     if (log_file!=NULL) scheme_set_output_port_file(sc, log_file);
 }
 
