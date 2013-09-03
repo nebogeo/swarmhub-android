@@ -981,7 +981,7 @@
                    (update-widget 'text-view (get-id "field-size-amount") 'text
                                   (string-append (number->string v)
                                                  (if (equal? (current-units) metric)
-                                                     " acres" " hectares"))))))
+                                                     " hectares" " acres"))))))
 
       (text-view (make-id "field-size-amount") "" 15 fillwrap)
 

@@ -13,18 +13,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package foam.nebogeo;
+package foam.swarmhubapp;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
 
-public class MainActivity extends StarwispActivity
+public class EmailActivity extends StarwispActivity
 {
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
-        m_Name = "main";
+        m_Name = "email";
         super.onCreate(savedInstanceState);
     }
 }

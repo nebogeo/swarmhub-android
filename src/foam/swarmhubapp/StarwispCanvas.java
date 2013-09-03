@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package foam.nebogeo;
+package foam.swarmhubapp;
 
 import android.content.Context;
 import android.view.SurfaceView;

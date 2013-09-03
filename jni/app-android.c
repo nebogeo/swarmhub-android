@@ -17,7 +17,7 @@ static long _getTime(void)
     return (long)(now.tv_sec*1000 + now.tv_usec/1000);
 }
 
-void Java_foam_nebogeo_Scheme_nativeInit(JNIEnv* env)
+void Java_foam_swarmhubapp_Scheme_nativeInit(JNIEnv* env)
 {
     app_alive = 1;
     sc=scheme_init_new();
@@ -25,13 +25,13 @@ void Java_foam_nebogeo_Scheme_nativeInit(JNIEnv* env)
     if (log_file!=NULL) scheme_set_output_port_file(sc, log_file);
 }
 
-void Java_foam_nebogeo_Scheme_nativeDone(JNIEnv* env)
+void Java_foam_swarmhubapp_Scheme_nativeDone(JNIEnv* env)
 {
     app_alive = 0;
     fclose(log_file);
 }
 
-jstring Java_foam_nebogeo_Scheme_nativeEval(JNIEnv* env, jobject thiz, jstring code)
+jstring Java_foam_swarmhubapp_Scheme_nativeEval(JNIEnv* env, jobject thiz, jstring code)
 {
    const char *native_code = (*env)->GetStringUTFChars(env, code, 0);
    scheme_load_string(sc,native_code);

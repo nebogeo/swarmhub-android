@@ -1,4 +1,4 @@
-package foam.nebogeo;
+package foam.swarmhubapp;
 
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;

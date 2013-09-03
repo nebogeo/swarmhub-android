@@ -1,4 +1,4 @@
-package foam.nebogeo;
+package foam.swarmhubapp;
 
 import java.io.File;
 import java.io.FileOutputStream;
