@@ -609,6 +609,20 @@
              (* (/ (- 12 (list-ref first 1)) twidth) graph-width)
              (list-ref first 2))))))
 
+(define (build-key)
+  (let ((units (if (equal? (current-units) metric)
+                   "kg/hectare"
+                   "units/acre")))
+    (list
+     (drawlist-text units 15 140 '(0 0 0) 15 "vertical")
+     (drawlist-text "150" 20 50 '(0 0 0) 10 "horizontal")
+     (drawlist-text "100" 20 100 '(0 0 0) 10 "horizontal")
+     (drawlist-text "50" 20 150 '(0 0 0) 10 "horizontal")
+     (drawlist-text "N" 280 30 '(200 0 0) 20 "horizontal")
+     (drawlist-text "P" 280 60 '(200 200 0) 20 "horizontal")
+     (drawlist-text "K" 280 90 '(0 0 200) 20 "horizontal")
+     )))
+
 (define (build-graph)
   (append
    (let ((events (field-events (current-field))))
@@ -617,9 +631,10 @@
                (max (date->day (event-date (list-ref events (- (length events) 1))))))
            (append
             (build-t-scale (event-date (car events)) min max)
-            (build-lines events min max '(127 0 0) 0)
-            (build-lines events min max '(0 127 0) 1)
-            (build-lines events min max '(0 0 127) 2)))
+            (build-lines events min max '(200 0 0) 0)
+            (build-lines events min max '(200 200 0) 1)
+            (build-lines events min max '(0 0 200) 2)
+            (build-key)))
          (list (drawlist-text "Not enough events for graph"
                               20 105 '(0 0 0) 20 "horizontal"))))
    (list
