@@ -767,7 +767,7 @@
     (text-view (make-id "splash-title") "The Farm Crap App" 40 centre-layout)
     (text-view (make-id "splash-about") "Manage your muck with the Farm Crap App" 20 centre-layout)
     (spacer 20)
-    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 20 centre-layout)
+    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am/kernow'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 20 centre-layout)
     (spacer 20)
     (image-view (make-id "about-logo") "logo" fillwrap)
     (spacer 20)
