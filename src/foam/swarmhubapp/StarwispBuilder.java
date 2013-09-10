@@ -54,6 +54,7 @@ import android.text.Editable;
 import android.text.method.LinkMovementMethod;
 import android.widget.DatePicker;
 import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.Size;
 import android.hardware.Camera;
 import java.io.FileNotFoundException;
 import android.net.Uri;
@@ -62,6 +63,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.text.DateFormat;
+import java.util.List;
 import android.content.DialogInterface;
 
 import android.app.TimePickerDialog;
@@ -336,7 +338,14 @@ public class StarwispBuilder
                 CameraPreview v = new CameraPreview(ctx,pt);
                 final int wid = arr.getInt(1);
                 v.setId(wid);
+
+
+                //              LinearLayout.LayoutParams lp =
+                //  new LinearLayout.LayoutParams(minWidth, minHeight, 1);
+
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(2)));
+
+//                v.setLayoutParams(lp);
                 parent.addView(v);
             }
 

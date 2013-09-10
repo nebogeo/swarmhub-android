@@ -76,15 +76,18 @@ public class starwisp extends StarwispActivity
     {
         setContentView(R.layout.main);
 
-        // build static things
-        m_Scheme = new Scheme(this);
-        m_Builder = new StarwispBuilder(m_Scheme);
-        m_Name = "splash";
-
+        Log.i("starwisp","Making directory...");
         String dirname = "swarmhub/";
         m_AppDir = "/sdcard/"+dirname;
         File appdir = new File(m_AppDir);
         appdir.mkdirs();
+
+        Log.i("starwisp","Building interpreter...");
+
+        // build static things
+        m_Scheme = new Scheme(this);
+        m_Builder = new StarwispBuilder(m_Scheme);
+        m_Name = "splash";
 
         // tell scheme the date
         final Calendar c = Calendar.getInstance();

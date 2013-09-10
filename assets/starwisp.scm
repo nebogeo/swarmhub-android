@@ -1358,26 +1358,26 @@
 
   (activity
    "camera"
-   (vert
-    (camera-preview (make-id "camera") (layout 295 220 1 'centre))
-    (image-view (make-id "example") "test" (layout 'wrap-content 220 1 'left))
-    (horiz
+   (horiz
+    (vert
+     (camera-preview (make-id "camera") (layout 'wrap-content 220 1 'left))
      (button (make-id "take-pic") "Take photo" 10 fillwrap
-             (lambda ()
-               (let ((path (string-append
-                            (field-name (current-field))
-                            "-"
-                            (number->string (event-id (current-event)))
-                            "/")))
-                 (list
-                  (make-directory path)
-                  (update-widget 'camera-preview (get-id "camera") 'take-picture path)))))
+            (lambda ()
+              (let ((path (string-append
+                           (field-name (current-field))
+                           "-"
+                           (number->string (event-id (current-event)))
+                           "/")))
+                (list
+                 (make-directory path)
+                 (update-widget 'camera-preview (get-id "camera") 'take-picture path))))))
+    (vert
+     (image-view (make-id "example") "test" (layout 'wrap-content 220 1 'left))
      (button (make-id "back") "Back" 10 fillwrap
              (lambda ()
                (list
                 (update-widget 'camera-preview (get-id "camera") 'shutdown 0)
                 (finish-activity 99))))))
-
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)

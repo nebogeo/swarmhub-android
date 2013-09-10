@@ -5,7 +5,9 @@ import android.view.SurfaceView;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.Size;
 import android.util.Log;
+import java.util.List;
 
 class PictureTaker
 {
@@ -24,6 +26,18 @@ class PictureTaker
     public void Shutdown() {
         Log.i("DORIS","Closing camera");
         CloseCamera();
+    }
+
+    public List<Size> GetSupportedPictureSizes() {
+        mCam = Camera.open();
+        if (mCam == null) {
+            Log.i("DORIS","Camera is null!");
+            return null;
+        }
+        List<Size> list = mCam.getParameters().getSupportedPictureSizes();
+        mCam.release();
+        mCam = null;
+        return list;
     }
 
     private void OpenCamera(SurfaceView view) {

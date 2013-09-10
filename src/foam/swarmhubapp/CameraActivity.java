@@ -18,6 +18,7 @@ package foam.swarmhubapp;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 
 public class CameraActivity extends StarwispActivity
 {
@@ -26,5 +27,6 @@ public class CameraActivity extends StarwispActivity
     {
         m_Name = "camera";
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
     }
 }
