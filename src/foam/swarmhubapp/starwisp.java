@@ -76,13 +76,10 @@ public class starwisp extends StarwispActivity
     {
         setContentView(R.layout.main);
 
-        Log.i("starwisp","Making directory...");
         String dirname = "swarmhub/";
         m_AppDir = "/sdcard/"+dirname;
         File appdir = new File(m_AppDir);
         appdir.mkdirs();
-
-        Log.i("starwisp","Building interpreter...");
 
         // build static things
         m_Scheme = new Scheme(this);
@@ -100,7 +97,6 @@ public class starwisp extends StarwispActivity
 
         Log.i("starwisp","started, now running starwisp.scm...");
         m_Scheme.eval(m_Scheme.readRawTextFile(this, "starwisp.scm"));
-
 
         super.onCreate(savedInstanceState);
     }

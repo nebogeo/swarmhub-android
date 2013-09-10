@@ -98,7 +98,6 @@ class StarwispCanvas extends SurfaceView implements SurfaceHolder.Callback {
     public void onDraw(Canvas canvas) {
         float sx=getWidth()/320.0f;
         float sy=getHeight()/200.0f;
-        Log.i("starwisp","sx="+sx);
 
         Paint myPaint = new Paint();
         myPaint.setStrokeWidth(0);

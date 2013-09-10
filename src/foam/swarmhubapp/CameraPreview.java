@@ -37,14 +37,12 @@ public class CameraPreview extends SurfaceView implements
         super(context);
         mCtx=context;
         mPictureTaker=picturetaker;
-        Log.i("DORIS","CameraPreview ctr");
         this.mSurfaceHolder = this.getHolder();
         this.mSurfaceHolder.addCallback(this);
         this.mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
     public void TakePicture(PictureCallback cb) {
-        Log.i("starwisp","taking picture");
         mPictureTaker.TakePicture(this,cb);
     }
 
@@ -54,32 +52,23 @@ public class CameraPreview extends SurfaceView implements
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        Log.i("DORIS","CameraPreview surface created");
         mSurfaceHolder=surfaceHolder;
-        Log.i("DORIS",""+mPictureTaker);
         mPictureTaker.Startup(this);
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        Log.i("DORIS","preview surfaceDestroyed");
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int format,
             int width, int height) {
-        Log.i("DORIS","preview surfacechanged");
         mSurfaceHolder=surfaceHolder;
-
         mPictureTaker.mCam.stopPreview();
-
-        Log.i("starwisp","getting sizes...");
 
         Parameters parameters = mPictureTaker.mCam.getParameters();
         List<Size> list = parameters.getSupportedPictureSizes();
 
-        Log.i("starwisp","got sizes...");
-        Log.i("starwisp",""+list.size());
         int minHeight=9999999;
         int minWidth=0;
         for(int i = 0; i<list.size(); i++){

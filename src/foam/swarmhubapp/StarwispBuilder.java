@@ -180,8 +180,6 @@ public class StarwispBuilder
 
                 String image = arr.getString(2);
 
-                Log.i("starwisp",image);
-
                 if (image.startsWith("/")) {
                     Bitmap bitmap = BitmapFactory.decodeFile(image);
                     v.setImageBitmap(bitmap);
@@ -371,7 +369,7 @@ public class StarwispBuilder
             Integer id = arr.getInt(1);
             String token = arr.getString(2);
 
-            Log.i("starwisp", "Update: "+type+" "+id+" "+token);
+//            Log.i("starwisp", "Update: "+type+" "+id+" "+token);
 
             // non widget commands
             if (token.equals("toast")) {
@@ -389,8 +387,6 @@ public class StarwispBuilder
                 // Create a new instance of TimePickerDialog and return it
                 TimePickerDialog d=new TimePickerDialog(ctx, null, hour, minute, true);
                 d.show();
-
-                Log.i("starwisp", "attempt time picker");
                 return;
             };
 
@@ -534,7 +530,7 @@ public class StarwispBuilder
             View vv=ctx.findViewById(id);
             if (vv==null)
             {
-                Log.i("starwisp", "Can't find widget : "+id);
+//                Log.i("starwisp", "Can't find widget : "+id);
                 return;
             }
 
@@ -618,7 +614,6 @@ public class StarwispBuilder
             }
 
             if (type.equals("camera-preview")) {
-                Log.i("starwisp","camera update");
                 final CameraPreview v = (CameraPreview)vv;
 
                 if (token.equals("take-picture")) {
@@ -627,28 +622,18 @@ public class StarwispBuilder
                     v.TakePicture(
                         new PictureCallback() {
                             public void onPictureTaken(byte[] data, Camera camera) {
-
-                                Log.i("starwisp", "callback returns");
-
                                 String datetime = getDateTime();
                                 String filename = path+datetime + ".jpg";
-
-                                Log.i("starwisp", filename);
                                 SaveData(filename,data);
-
                                 v.Shutdown();
                                 ctx.finish();
-
                             }
                         });
                 }
 
                 if (token.equals("shutdown")) {
-                    Log.i("starwisp","shutting down camera");
                     v.Shutdown();
                 }
-
-
 
                 return;
             }
@@ -656,7 +641,6 @@ public class StarwispBuilder
             if (type.equals("seek-bar")) {
                 SeekBar v = new SeekBar(ctx);
                 if (token.equals("max")) {
-                    Log.i("starwisp","Max:"+arr.getInt(3));
                     // android seekbar bug workaround
                     int p=v.getProgress();
                     v.setMax(0);

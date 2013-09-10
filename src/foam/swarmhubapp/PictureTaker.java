@@ -24,14 +24,12 @@ class PictureTaker
     }
 
     public void Shutdown() {
-        Log.i("DORIS","Closing camera");
         CloseCamera();
     }
 
     public List<Size> GetSupportedPictureSizes() {
         mCam = Camera.open();
         if (mCam == null) {
-            Log.i("DORIS","Camera is null!");
             return null;
         }
         List<Size> list = mCam.getParameters().getSupportedPictureSizes();
@@ -44,14 +42,13 @@ class PictureTaker
         try {
             mCam = Camera.open();
             if (mCam == null) {
-                Log.i("DORIS","Camera is null!");
                 return;
             }
             mCam.setPreviewDisplay(view.getHolder());
             mCam.startPreview();
         }
         catch (Exception e) {
-            Log.i("DORIS","Problem opening camera! " + e);
+            Log.i("starwisp","Problem opening camera! " + e);
             return;
         }
     }
@@ -71,17 +68,15 @@ class PictureTaker
             CloseCamera();
             OpenCamera(view);
 
-            Log.i("starwisp","picturetaker taking picture");
-
             try {
                 mCam.takePicture(null, null, picture);
             }
             catch (Exception e) {
-                Log.i("DORIS","Problem taking picture: " + e);
+                Log.i("starwisp","Problem taking picture: " + e);
             }
         }
         else {
-            Log.i("DORIS","Picture already being taken");
+            Log.i("starwisp","Picture already being taken");
         }
     }
 }

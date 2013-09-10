@@ -241,7 +241,7 @@
   (list name soil crop '() size))
 
 (define (empty-field)
-  (field "" "" "" '()))
+  (field "" "" "" '() 50))
 
 (define (field-name f) (list-ref f 0))
 (define (field-modify-name f v) (list-replace f 0 v))
@@ -1005,7 +1005,7 @@
                       (string-append
                        "50"
                        (if (equal? (current-units) metric)
-                           " acres" " hectares")))))
+                           " hectares" " acres")))))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
@@ -1080,7 +1080,7 @@
      (text-view (make-id "blurb") "Enter new crap spreading event" 20 fillwrap)
      (horiz
       (text-view (make-id "fc-date-text")
-                 (date->string (list date-day date-month date-year)) 20 fillwrap)
+                 (date->string (list date-day date-month date-year)) 25 fillwrap)
       (button (make-id "date") "Set date" 20 fillwrap
               (lambda ()
                 (list (date-picker-dialog

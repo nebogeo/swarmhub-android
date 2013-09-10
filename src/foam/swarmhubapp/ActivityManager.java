@@ -35,7 +35,6 @@ public class ActivityManager {
 
     static public void Register(String name, Class actclass)
     {
-        Log.i("starwisp","adding "+name+" to activity registry");
         m_Activities.put(name,actclass);
     }
 
