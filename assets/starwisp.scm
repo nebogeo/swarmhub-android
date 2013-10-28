@@ -37,6 +37,8 @@
 (define DM4 "4% DM (Medium soup)")
 (define DM6 "6% DM (Thick soup)")
 (define DM10 "10% DM (Porridge)")
+(define DM4-pig "4% DM (Thick soup)")
+(define DM6-pig "6% DM (Porridge)")
 
 (define images
   (list
@@ -137,8 +139,8 @@
     pig "m3/ha" 50
     (list
      (quality DM2 (nitrogen (soil (crop 15 22.5) (crop 52.5 60)) 60 82.5 82.5) 25 90)
-     (quality DM4 (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
-     (quality DM6 (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
+     (quality DM4-pig (nitrogen (soil (crop 18 27) (crop 54 63)) 63 90 90) 45 110)
+     (quality DM6-pig (nitrogen (soil (crop 22 33) (crop 55 66)) 66 99 99) 65 125)))
    (nutrients
     poultry "tons/ha" 10
     (list
@@ -151,14 +153,15 @@
      (quality fresh (nitrogen (soil 15 30) 30 45 30) 95 360) ;; soil inc fresh
     ))))
 
-(define (tons/acre->tons/ha a)
-  (* a 2.47105381))
-
-(define (gallons/acre->m3/ha a)
-  (* a 0.0112336377))
-
-(define (kg/ha->units/acre a)
-  (* a 0.8))
+(define (tons/acre->tons/ha a) (* a 2.47105381))
+(define (tons/ha->tons/acre a) (/ a 2.47105381))
+(define (gallons/acre->m3/ha a) (* a 0.0112336377))
+(define (m3/ha->gallons/acre a) (/ a 0.0112336377))
+(define (kg/ha->units/acre a) (* a 0.8))
+(define (units/acre->kg/ha a) (/ a 0.8))
+(define (acres->hectares a) (* a 0.404686))
+(define (hectares->acres a) (* a 2.47105))
+(define (m3->gallons a) (* a 219.969))
 
 (define (error . args)
   (display (apply string-append args))(newline))
@@ -209,14 +212,46 @@
 (define (rounding a)
   (/ (round (* 100 a)) 100))
 
+(define (convert-input amount units)
+  (if (equal? (current-units) metric)
+      amount
+      (cond
+       ((or (equal? units "m3/ha") (equal? units "gallons/acre"))
+        (gallons/acre->m3/ha amount))
+       ((or (equal? units "tons/ha") (equal? units "tons/acre"))
+        (tons/acre->tons/ha amount))
+       ((or (equal? units "kg/ha") (equal? units "units/acre"))
+        (units/acre->kg/ha amount))
+       ((or (equal? units "hectares") (equal? units "acres"))
+        (acres->hectares amount))
+       ((equal? units "tonnes") amount) ;; tonnes are metric everywhere!?
+       (else (msg "I don't understand how to convert" units)))))
+
+(define (convert-output amount units)
+  (rounding
+   (if (equal? (current-units) metric)
+       amount
+       (cond
+        ((or (equal? units "m3/ha") (equal? units "gallons/acre"))
+         (m3/ha->gallons/acre amount))
+        ((or (equal? units "tons/ha") (equal? units "tons/acre"))
+         (tons/ha->tons/acre amount))
+        ((or (equal? units "kg/ha") (equal? units "units/acre"))
+         (kg/ha->units/acre amount))
+        ((or (equal? units "hectares") (equal? units "acres"))
+         (hectares->acres amount))
+        ((or (equal? units "m3") (equal? units "gallons"))
+         (m3->gallons amount))
+        ((equal? units "tonnes") amount) ;; tonnes are metric everywhere!?
+        (else (msg "I don't understand how to convert" units))))))
+
 ;; quantity is from the table (so I can debug easily it matches the data)
 ;; amount is from the slider
 (define (process-nutrients amount units quantity nutrients)
-  (let ((amount (imperial->metric amount units)))
-    (map
-     (lambda (q)
-       (rounding (metric->imperial (* amount (/ q quantity)) units)))
-     nutrients)))
+  (map
+   (lambda (q)
+     (rounding (* amount (/ q quantity))))
+   nutrients))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -444,35 +479,43 @@
 
 (define (csv-headings)
   (string-append
-   "Field name, "
-   "Size, "
-   "Soil, "
-   "Crop, "
-   "Manure, "
-   "Date, "
-   "N, P, K, "
-   "Amount, "
-   "Total Amount, "
-   "Quality, "
-   "Season, "
-   "Units\n"))
+   "\"Field name\", "
+   "\"Size\", "
+   "\"Size units\", "
+   "\"Soil\", "
+   "\"Crop\", "
+   "\"Manure\", "
+   "\"Date\", "
+   "\"N\", \"P\", \"K\", "
+   "\"Nutrient units\", "
+   "\"Amount\", "
+   "\"Amount units\", "
+   "\"Total Amount\", "
+   "\"Total units\", "
+   "\"Quality\", "
+   "\"Season\"\n"))
 
 (define (stringify-event event name soil crop size)
-  (string-append
-   name ", "
-   (number->string size) ", "
-   soil ", "
-   crop ", "
-   (event-type event) ", "
-   (date->string (event-date event)) ", "
-   (number->string (list-ref (event-nutrients event) 0)) ", "
-   (number->string (list-ref (event-nutrients event) 1)) ", "
-   (number->string (list-ref (event-nutrients event) 2)) ", "
-   (number->string (event-amount event)) ", "
-   (number->string (* size (event-amount event))) ", "
-   (event-quality event) ", "
-   (event-season event) ", "
-   (event-units event)))
+  (let ((aunits (amount-units event))
+        (nunits (nutrient-units event)))
+    (string-append
+     "\"" name "\", "
+     (number->string (convert-output size "hectares")) ", "
+     "\"" (if (equal? (current-units) metric) "ha" "acres") "\", "
+     "\"" soil "\", "
+     "\"" crop "\", "
+     "\"" (event-type event) "\", "
+     "\"" (date->string (event-date event)) "\", "
+     (number->string (convert-output (list-ref (event-nutrients event) 0) "kg/ha")) ", "
+     (number->string (convert-output (list-ref (event-nutrients event) 1) "kg/ha")) ", "
+     (number->string (convert-output (list-ref (event-nutrients event) 2) "kg/ha")) ", "
+     "\"" (if (equal? (current-units) metric) "kg/ha" "units/acre") "\", "
+     (number->string (convert-output (event-amount event) aunits)) ", "
+     "\"" nunits "\","
+     (number->string (convert-output (* size (event-amount event)) aunits)) ", "
+     "\"" aunits "\", "
+     "\"" (event-quality event) "\", "
+     "\"" (event-season event) "\"")))
 
 (define (stringify-field field)
   (foldl
@@ -497,7 +540,7 @@
 
 (define (calc-nutrients)
   (let* ((type (calc-type (state-calc gstate)))
-         (amount (* (current-seek-mul) (calc-amount (state-calc gstate))))
+         (amount (calc-amount (state-calc gstate)))
          (quality (calc-quality (state-calc gstate)))
          (season (calc-season (state-calc gstate)))
          (crop (calc-crop (state-calc gstate)))
@@ -511,25 +554,47 @@
 
     (get-nutrients type amount quality season crop soil)))
 
+(define (get-units)
+  (let ((type (calc-type (state-calc gstate))))
+    (if (equal? (current-units) metric)
+        (nutrients-units (find type nutrients-metric))
+        (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+            "gallons/acre"
+            "tons/acre"))))
+
+(define (nutrient-units event)
+  (let ((type (event-type event)))
+    (if (equal? (current-units) metric)
+        (nutrients-units (find type nutrients-metric))
+        (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+            "gallons/acre"
+            "tons/acre"))))
+
+(define (amount-units event)
+  (let ((type (event-type event)))
+    (if (equal? (current-units) metric)
+        (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+            "m3" "tonnes")
+        ;; it's imperial
+        (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
+            "gallons"
+            "tonnes"))))
+
+
+
 (define (run-calc prepend)
   (let ((amounts (calc-nutrients))
-        (amount (* (current-seek-mul) (calc-amount (state-calc gstate))))
+        (amount (calc-amount (state-calc gstate)))
         (type (calc-type (state-calc gstate))))
     (list
      (update-widget 'text-view (get-id (string-append prepend "amount-value")) 'text
-                    (string-append (number->string amount) " "
-                                   (if (equal? (current-units) metric)
-                                       (nutrients-units (find type nutrients-metric))
-                                       (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
-                                           "gallons/acre"
-                                           "tons/acre"))))
-
+                    (string-append (number->string (convert-output amount (get-units))) " " (get-units)))
      (update-widget 'text-view (get-id (string-append prepend "na"))
-                    'text (number->string (list-ref amounts 0)))
+                    'text (number->string (convert-output (list-ref amounts 0) "kg/ha")))
      (update-widget 'text-view (get-id (string-append prepend "pa"))
-                    'text (number->string (list-ref amounts 1)))
+                    'text (number->string (convert-output (list-ref amounts 1) "kg/ha")))
      (update-widget 'text-view (get-id (string-append prepend "ka"))
-                    'text (number->string (list-ref amounts 2))))))
+                    'text (number->string (convert-output (list-ref amounts 2) "kg/ha"))))))
 
 (define (spacer size)
   (space (layout 'fill-parent size 1 'left)))
@@ -612,12 +677,15 @@
 (define (build-key)
   (let ((units (if (equal? (current-units) metric)
                    "Kg/hectare"
-                   "units/acre")))
+                   "units/acre"))
+        (a (if (equal? (current-units) metric) 150 (convert-output 150 "kg/ha")))
+        (b (if (equal? (current-units) metric) 100 (convert-output 100 "kg/ha")))
+        (c (if (equal? (current-units) metric) 50 (convert-output 50 "kg/ha"))))
     (list
      (drawlist-text units 15 140 '(0 0 0) 15 "vertical")
-     (drawlist-text "150" 20 50 '(0 0 0) 10 "horizontal")
-     (drawlist-text "100" 20 100 '(0 0 0) 10 "horizontal")
-     (drawlist-text "50" 20 150 '(0 0 0) 10 "horizontal")
+     (drawlist-text a 20 50 '(0 0 0) 10 "horizontal")
+     (drawlist-text b 20 100 '(0 0 0) 10 "horizontal")
+     (drawlist-text c 20 150 '(0 0 0) 10 "horizontal")
      (drawlist-text "N" 280 30 '(200 0 0) 20 "horizontal")
      (drawlist-text "P" 280 60 '(200 200 0) 20 "horizontal")
      (drawlist-text "K" 280 90 '(0 0 200) 20 "horizontal")
@@ -673,7 +741,13 @@
            (or (equal? manure cattle)
                (equal? manure pig)))
       (mutate-current-seek-mul! 100)
-      (mutate-current-seek-mul! 1)))
+      (cond
+       ((equal? manure poultry)
+        (if (equal? (current-units) imperial)
+            (mutate-current-seek-mul! 0.1)
+            (mutate-current-seek-mul! 0.15)))
+       (else
+        (mutate-current-seek-mul! 1)))))
 
 (define (build-field-buttons)
   (if (null? (get-fields))
@@ -864,11 +938,13 @@
                (update-seek-mul! v)
                (append
                 (update-type! "c" v)
+                (update-amount! "c" (convert-input (* (current-seek-mul) 50) (get-units)))
                 (list
+                 (update-widget 'seek-bar (get-id "amount") 'init 0)
                  (update-widget 'spinner (get-id "cquality") 'array
                                 (cond
                                  ((equal? v cattle) (list DM2 DM6 DM10))
-                                  ((equal? v pig) (list DM2 DM4 DM6))
+                                  ((equal? v pig) (list DM2 DM4-pig DM6-pig))
                                   ((equal? v poultry) (list layer broiler))
                                   ((equal? v FYM) (list fresh other))))
 
@@ -900,7 +976,7 @@
     (seek-bar (make-id "amount") 100 fillwrap
               (lambda (v)
                 (append
-                 (update-amount! "c" v)
+                 (update-amount! "c" (convert-input (* (current-seek-mul) v) (get-units)))
                  (list
                   (update-widget 'image-view (get-id "example") 'image
                                  (find-image (calc-type (current-calc))
@@ -929,11 +1005,18 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
-     (if (equal? (current-units) metric) (list)
-         (list
-          (update-widget 'text-view (get-id "nt") 'text "N units/acre")
-          (update-widget 'text-view (get-id "pt") 'text "P units/acre")
-          (update-widget 'text-view (get-id "kt") 'text "K units/acre"))))
+     (append
+      (list
+       (update-widget 'seek-bar (get-id "amount") 'init 0)
+       (update-widget 'image-view (get-id "example") 'image
+                      (find-image (calc-type (current-calc))
+                                  (calc-amount (current-calc)))))
+      (update-amount! "c" (convert-input (* (current-seek-mul) 50) (get-units)))
+      (if (equal? (current-units) metric) (list)
+          (list
+           (update-widget 'text-view (get-id "nt") 'text "N units/acre")
+           (update-widget 'text-view (get-id "pt") 'text "P units/acre")
+           (update-widget 'text-view (get-id "kt") 'text "K units/acre")))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -977,10 +1060,13 @@
 
      (edit-text (make-id "field-size") "0" 20 "numeric" fillwrap
                 (lambda (v)
+                  (msg v (string? v))
                   (mutate-state!
                    (lambda (s)
                      (state-modify-field
-                      s (field-modify-size (state-field s) (string->number v)))))
+                      s (field-modify-size
+                         (state-field s)
+                         (dbg (convert-input (dbg (string->number v)) "hectares"))))))
                   '()))
 
      (horiz
@@ -1100,14 +1186,16 @@
                   (update-seek-mul! v)
                   (append
                    (update-type! "fc" v)
+                   (update-amount! "fc" (convert-input (* (current-seek-mul) 50) (get-units)))
                    (list
+                    (update-widget 'seek-bar (get-id "amount") 'init 0)
                     (update-widget 'image-view (get-id "example") 'image
                                    (find-image (calc-type (current-calc))
                                                (calc-amount (current-calc))))
                     (update-widget 'spinner (get-id "quality") 'array
                                    (cond
                                     ((equal? v cattle) (list DM2 DM6 DM10))
-                                    ((equal? v pig) (list DM2 DM4 DM6))
+                                    ((equal? v pig) (list DM2 DM4-pig DM6-pig))
                                     ((equal? v poultry) (list layer broiler))
                                     ((equal? v FYM) (list fresh other)))))))))
 
@@ -1122,7 +1210,7 @@
                  (update-widget 'image-view (get-id "example") 'image
                      (find-image (calc-type (current-calc))
                                  (calc-amount (current-calc))))
-                 (update-amount! "fc" v))))
+                 (update-amount! "fc" (convert-input (* (current-seek-mul) v) (get-units))))))
      (text-view (make-id "fcamount-value") "4500 gallons" 30
                 (layout 'wrap-content 'wrap-content 1 'centre))
 
@@ -1161,7 +1249,7 @@
                        (calc-crop (state-calc gstate))
                        (calc-soil (state-calc gstate))
                        (field-size field)
-                       (current-units))))))
+                       metric)))))
 
                 (mutate-saved-data!
                  (lambda (d)
@@ -1178,6 +1266,9 @@
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
+     (mutate-state!
+      (lambda (s)
+        (state-modify-date s (list date-day date-month date-year))))
      (update-soil! "fc" (field-soil (current-field)))
      (update-crop! "fc" (field-crop (current-field)))
      (update-season! "fc" (date->season (current-date)))
@@ -1188,7 +1279,14 @@
            (update-widget 'text-view (get-id "pt") 'text "P units/acre")
            (update-widget 'text-view (get-id "kt") 'text "K units/acre")))
       (list
-       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field))))))
+       (update-widget 'seek-bar (get-id "amount") 'init 0)
+       (update-widget 'image-view (get-id "example") 'image
+                      (find-image (calc-type (current-calc))
+                                  (calc-amount (current-calc))))
+       (update-widget 'text-view (get-id "fc-date-text") 'text (date->string (list date-day date-month date-year)))
+       (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field))))
+
+      (update-amount! "fc" (convert-input (* (current-seek-mul) 50) (get-units)))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -1300,41 +1398,31 @@
      (activity-layout activity))
    (lambda (activity arg)
      (append
-      (if (equal? (event-units (current-event)) metric) (list)
+      (if (equal? (current-units) metric) (list)
           (list
            (update-widget 'text-view (get-id "nt") 'text "N units/acre")
            (update-widget 'text-view (get-id "pt") 'text "P units/acre")
            (update-widget 'text-view (get-id "kt") 'text "K units/acre")))
       (let ((type (event-type (current-event))))
         (list
-         (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
-         (update-widget 'text-view (get-id "fcpa") 'text (list-ref (event-nutrients (current-event)) 1))
-         (update-widget 'text-view (get-id "fcka") 'text (list-ref (event-nutrients (current-event)) 2))
+         (update-widget 'text-view (get-id "fcna") 'text (convert-output (list-ref (event-nutrients (current-event)) 0) "kg/ha"))
+         (update-widget 'text-view (get-id "fcpa") 'text (convert-output (list-ref (event-nutrients (current-event)) 1) "kg/ha"))
+         (update-widget 'text-view (get-id "fcka") 'text (convert-output (list-ref (event-nutrients (current-event)) 2) "kg/ha"))
          (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
          (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
 
          (update-widget 'text-view (get-id "eventview-amount") 'text
                         (string-append
-                         (number->string (event-amount (current-event)))
-                         " "
-                         (if (equal? (event-units (current-event)) metric)
-                             (nutrients-units (find type nutrients-metric))
-                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
-                                 "gallons/acre"
-                                 "tons/acre"))))
+                         (number->string (convert-output (event-amount (current-event))
+                                                         (nutrient-units (current-event))))
+                         " " (nutrient-units (current-event))))
 
-         (update-widget 'text-view (get-id "total-amount") 'text
-                        (string-append
-                         (number->string (* (event-size (current-event))
-                                            (event-amount (current-event))))
-                         " "
-                         (if (equal? (current-units) metric)
-                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
-                                 "m3" "tonnes")
-                             ;; it's imperial
-                             (if (equal? (nutrients-units (find type nutrients-metric)) "m3/ha")
-                                 "gallons"
-                                 "tonnes"))))
+         (let ((qunits (amount-units (current-event))))
+           (update-widget 'text-view (get-id "total-amount") 'text
+                          (string-append
+                           (number->string (convert-output (* (event-size (current-event))
+                                                              (event-amount (current-event))) qunits))
+                           " " qunits)))
 
          (update-widget 'text-view (get-id "quality") 'text (event-quality (current-event)))
          (update-widget 'text-view (get-id "season") 'text (event-season (current-event)))
@@ -1342,8 +1430,8 @@
          (update-widget 'text-view (get-id "soil") 'text (event-soil (current-event)))
          (update-widget 'text-view (get-id "size") 'text
                         (string-append
-                         (number->string (event-size (current-event))) " "
-                         (if (equal? (event-units (current-event)) metric)
+                         (number->string (convert-output (event-size (current-event)) "hectares")) " "
+                         (if (equal? (current-units) metric)
                              "hectares"
                              "acres")))
          (update-widget 'text-view (get-id "fieldview-title") 'text (field-name (current-field)))))))

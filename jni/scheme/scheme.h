@@ -50,7 +50,7 @@ extern "C" {
  * Leave it defined if you want continuations, and also for the Sharp Zaurus.
  * Undefine it if you only care about faster speed and not strict Scheme compatibility.
  */
-#define USE_SCHEME_STACK
+//#define USE_SCHEME_STACK
 
 #if USE_DL
 # define USE_INTERFACE 1
@@ -74,7 +74,7 @@ extern "C" {
 #endif
 
 #ifndef USE_TRACING
-# define USE_TRACING 1
+# define USE_TRACING 0
 #endif
 
 #ifndef USE_PLIST
@@ -110,9 +110,9 @@ extern "C" {
 # define USE_INTERFACE 0
 #endif
 
-#ifndef SHOW_ERROR_LINE   /* Show error line in file */
+//#ifndef SHOW_ERROR_LINE   /* Show error line in file */
 # define SHOW_ERROR_LINE 1
-#endif
+//#endif
 
 typedef struct scheme scheme;
 typedef struct cell *pointer;

@@ -191,7 +191,16 @@
     _OP_DEF(opexe_6, "closure?",                       1,  1,       TST_NONE,                        OP_CLOSUREP         )
     _OP_DEF(opexe_6, "macro?",                         1,  1,       TST_NONE,                        OP_MACROP           )
 
+    _OP_DEF(opexe_6, "alog",                           1,  1,       TST_NONE,                        OP_ALOG             )
     _OP_DEF(opexe_6, "send",                           1,  1,       TST_NONE,                        OP_SEND             )
+    _OP_DEF(opexe_6, "db-open",                        1,  1,       TST_NONE,                        OP_OPEN_DB          )
+    _OP_DEF(opexe_6, "db-exec",                        2,  INF_ARG, TST_NONE,                        OP_EXEC_DB          )
+    _OP_DEF(opexe_6, "db-insert",                      2,  INF_ARG, TST_NONE,                        OP_INSERT_DB        )
+    _OP_DEF(opexe_6, "db-status",                      1,  1,       TST_NONE,                        OP_STATUS_DB        )
+    _OP_DEF(opexe_6, "time",                           0,  0,       TST_NONE,                        OP_TIME             )
+    _OP_DEF(opexe_6, "date-time",                      0,  0,       TST_NONE,                        OP_DATETIME         )
+    _OP_DEF(opexe_6, "id-map-add",                     2,  2,       TST_NONE,                        OP_ID_MAP_ADD       )
+    _OP_DEF(opexe_6, "id-map-get",                     1,  1,       TST_NONE,                        OP_ID_MAP_GET       )
 
 
 #undef _OP_DEF

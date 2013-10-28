@@ -197,7 +197,7 @@ public class StarwispBuilder
                 TextView v = new TextView(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(Html.fromHtml(arr.getString(2)));
-                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
+                v.setTextSize(arr.getInt(3));
                 v.setMovementMethod(LinkMovementMethod.getInstance());
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
                 if (arr.length()>5 && arr.getString(5).equals("left")) {
@@ -223,7 +223,7 @@ public class StarwispBuilder
                 final EditText v = new EditText(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
-                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
+                v.setTextSize((int)(arr.getInt(3)));
 
                 String inputtype = arr.getString(4);
                 if (inputtype.equals("text")) {
@@ -280,7 +280,7 @@ public class StarwispBuilder
                 Button v = new Button(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
-                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
+                v.setTextSize((int)(arr.getInt(3)));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
                 v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 final String fn = arr.getString(5);
@@ -675,6 +675,9 @@ public class StarwispBuilder
                     v.setProgress(1000);
 
                     // not working.... :(
+                }
+                if (token.equals("init")) {
+                    v.setProgress(50);
                 }
             }
 

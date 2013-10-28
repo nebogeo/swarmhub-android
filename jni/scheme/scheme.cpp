@@ -31,6 +31,20 @@
 #include <float.h>
 #include <ctype.h>
 
+#include <sys/time.h>
+#include <time.h>
+
+#ifdef ANDROID_NDK
+#include <android/log.h>
+#endif
+
+char *starwisp_data = NULL;
+
+//#include "core/db_container.h"
+///db_container the_db_container;
+//#include "core/idmap.h"
+//idmap the_idmap;
+
 #ifdef _EE
 #define USE_STRLWR 0
 #define USE_STRCASECMP 0
@@ -43,7 +57,6 @@
 # endif
 #endif
 
-char *starwisp_data = NULL;
 
 /* Used for documentation purposes, to signal functions in 'interface' */
 #define INTERFACE
@@ -2636,7 +2649,7 @@ static pointer opexe_0(scheme *sc, enum scheme_opcodes op) {
                for (x = car(closure_code(sc->code)), y = sc->args;
                     is_pair(x); x = cdr(x), y = cdr(y)) {
                     if (y == sc->NIL) {
-                         Error_0(sc,"not enough arguments");
+                         Error_1(sc,"not enough arguments ", x);
                     } else {
                          new_slot_in_env(sc, car(x), car(y));
                     }
@@ -4185,6 +4198,76 @@ static pointer opexe_5(scheme *sc, enum scheme_opcodes op) {
      }
      return sc->T;
 }
+/*
+// fudge to behave like planet jaymccarthy/sqlite:5:1/sqlite
+static pointer db_data_to_scm(scheme *sc, list *data)
+{
+     if (data!=NULL)
+     {
+          pointer ret=sc->NIL;
+          db::row_node *row=(db::row_node*)data->m_head;
+          while (row!=NULL)
+          {
+               pointer ret_row=mk_vector(sc,row->m_row->size());
+               int p=0;
+               db::value_node *value=(db::value_node*)row->m_row->m_head;
+               while (value!=NULL)
+               {
+                    switch (value->m_type)
+                    {
+                    case 's': set_vector_elem(ret_row,p,mk_string(sc,value->m_strvalue)); break;
+                    case 'i': set_vector_elem(ret_row,p,mk_integer(sc,value->m_intvalue)); break;
+                    case 'f': set_vector_elem(ret_row,p,mk_real(sc,value->m_floatvalue)); break;
+                    }
+                    p++;
+                    value=(db::value_node*)value->m_next;
+               }
+
+               ret=cons(sc,ret_row,ret);
+               row=(db::row_node*)row->m_next;
+          }
+          ret=reverse(sc,ret);
+          return ret;
+     }
+     return sc->NIL;
+}
+
+pointer db_exec(scheme* sc, db *d) {
+     sqlite3_stmt *stmt = d->prepare(string_value(cadr(sc->args)));
+
+     if (stmt == NULL) return sc->NIL;
+
+     pointer args = cdr(cdr(sc->args));
+     int c=1; // sqlite index from 1!
+     while (args!=sc->NIL) {
+          pointer arg=car(args);
+          if (is_string(arg))
+          {
+               d->bind_text(string_value(arg),c,stmt);
+          }
+          else
+          {
+               if (is_number(arg)) {
+                    if (num_is_integer(arg))
+                    {
+                         d->bind_int(ivalue(arg),c,stmt);
+                    }
+                    else
+                    {
+                         d->bind_float(rvalue(arg),c,stmt);
+                    }
+               }
+          }
+          args=cdr(args);
+          c++;
+     }
+
+     list *data=d->run(stmt);
+     pointer ret=db_data_to_scm(sc,data);
+     delete data;
+     return ret;
+}
+*/
 
 static pointer opexe_6(scheme *sc, enum scheme_opcodes op) {
      pointer x, y;
@@ -4234,14 +4317,102 @@ static pointer opexe_6(scheme *sc, enum scheme_opcodes op) {
      case OP_MACROP:          /* macro? */
           s_retbool(is_macro(car(sc->args)));
 ///////////// FLUXUS
+     case OP_ALOG:
+          #ifdef ANDROID_NDK
+          __android_log_print(ANDROID_LOG_INFO, "starwisp", string_value(car(sc->args)));
+          #endif
+          s_return(sc,sc->F);
      case OP_SEND:
           if (is_string(car(sc->args))) {
                if (starwisp_data!=NULL) {
+                    __android_log_print(ANDROID_LOG_INFO, "starwisp", "deleting starwisp data: something is wrong!");
                     free(starwisp_data);
                }
                starwisp_data=strdup(string_value(car(sc->args)));
           }
           s_return(sc,sc->F);
+     case OP_OPEN_DB: {
+/*
+          if (is_string(car(sc->args))) {
+               the_db_container.add(string_value(car(sc->args)),
+                                    new db(string_value(car(sc->args))));
+               s_return(sc,sc->T);
+          }
+*/
+          s_return(sc,sc->F);
+     }
+     case OP_EXEC_DB: {
+/*          if (is_string(car(sc->args)) &&
+              is_string(cadr(sc->args))) {
+               db *d=the_db_container.get(string_value(car(sc->args)));
+               if (d!=NULL)
+               {
+                    s_return(sc,db_exec(sc,d));
+               }
+               } */
+          s_return(sc,sc->F);
+     }
+     case OP_INSERT_DB: {
+/*
+          if (is_string(car(sc->args)) &&
+              is_string(cadr(sc->args))) {
+               db *d=the_db_container.get(string_value(car(sc->args)));
+               if (d!=NULL)
+               {
+                    db_exec(sc,d);
+                    s_return(sc,mk_integer(sc,d->last_rowid()));
+               }
+               } */
+          s_return(sc,sc->F);
+     }
+     case OP_STATUS_DB: {
+/*          if (is_string(car(sc->args))) {
+               s_return(sc,mk_string(sc,the_db_container.status()));
+               }*/
+          s_return(sc,sc->F);
+     }
+     case OP_TIME: {
+          	timeval t;
+            // stop valgrind complaining
+            t.tv_sec=0;
+            t.tv_usec=0;
+            gettimeofday(&t,NULL);
+            s_return(sc,cons(sc,mk_integer(sc,t.tv_sec),
+                             cons(sc,mk_integer(sc,t.tv_usec),sc->NIL)));
+     }
+     case OP_DATETIME: {
+          timeval t;
+          // stop valgrind complaining
+          t.tv_sec=0;
+          t.tv_usec=0;
+          gettimeofday(&t,NULL);
+
+          struct tm *now = gmtime((time_t *)&t.tv_sec);
+
+          /* note: now->tm_year is the number of years SINCE 1900.  On the year 2000, this
+             will be 100 not 0.  Do a man gmtime for more information */
+
+          s_return(sc,cons(sc,mk_integer(sc,now->tm_year + 1900),
+                           cons(sc,mk_integer(sc,now->tm_mon + 1),
+                                cons(sc,mk_integer(sc,now->tm_mday),
+                                     cons(sc,mk_integer(sc,now->tm_hour),
+                                          cons(sc,mk_integer(sc,now->tm_min),
+                                               cons(sc,mk_integer(sc,now->tm_sec), sc->NIL)))))));
+
+     }
+     case OP_ID_MAP_ADD: {
+/*          the_idmap.add(
+               string_value(car(sc->args)),
+               ivalue(cadr(sc->args))); */
+               s_return(sc,sc->F);
+     }
+     case OP_ID_MAP_GET: {
+          /*         s_return(
+               sc,mk_integer(sc,the_idmap.get(
+                               string_value(car(sc->args)))));
+          */
+          s_return(sc,sc->F);
+       }
 ////////////////////
      default:
           snprintf(sc->strbuff,STRBUFFSIZE,"%d: illegal operator", sc->op);

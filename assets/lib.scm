@@ -13,6 +13,27 @@
 ;; You should have received a copy of the GNU Affero General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; debugging and unit tests
+
+(define (msg . args)
+  (for-each
+   (lambda (i) (display i)(display " "))
+   args)
+  (newline))
+
+(define (dbg i) (msg i) i)
+
+(define (assert msg v)
+  (display (string-append "testing " msg))(newline)
+  (when (not v)
+        (error "unit " msg)))
+
+(define (asserteq msg a b)
+  (display (string-append "testing " msg))(newline)
+  (when (not (equal? a b))
+        (error "unit " msg a b)))
+
 
 (define (filter fn l)
   (foldl
