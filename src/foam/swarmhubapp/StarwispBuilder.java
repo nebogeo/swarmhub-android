@@ -51,6 +51,7 @@ import android.view.KeyEvent;
 import android.text.TextWatcher;
 import android.text.Html;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.method.LinkMovementMethod;
 import android.widget.DatePicker;
 import android.hardware.Camera.PictureCallback;
@@ -65,6 +66,7 @@ import java.util.Date;
 import java.text.DateFormat;
 import java.util.List;
 import android.content.DialogInterface;
+import android.util.TypedValue;
 
 import android.app.TimePickerDialog;
 import android.app.DatePickerDialog;
@@ -195,7 +197,7 @@ public class StarwispBuilder
                 TextView v = new TextView(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(Html.fromHtml(arr.getString(2)));
-                v.setTextSize(arr.getInt(3));
+                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
                 v.setMovementMethod(LinkMovementMethod.getInstance());
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
                 if (arr.length()>5 && arr.getString(5).equals("left")) {
@@ -221,10 +223,22 @@ public class StarwispBuilder
                 final EditText v = new EditText(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
-                v.setTextSize(arr.getInt(3));
-                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
+
+                String inputtype = arr.getString(4);
+                if (inputtype.equals("text")) {
+//                    v.setInputType(InputType.TYPE_CLASS_TEXT);
+                } else if (inputtype.equals("numeric")) {
+                    v.setInputType(InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);
+                } else if (inputtype.equals("email")) {
+                    v.setInputType(InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
+                }
+
+                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(5)));
                 v.setTypeface(((StarwispActivity)ctx).m_Typeface);
-                final String fn = arr.getString(5);
+
+
+                final String fn = arr.getString(6);
                 v.setSingleLine(true);
 /*                v.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View v) {
@@ -235,16 +249,28 @@ public class StarwispBuilder
                     }
                 });
 */
-                v.setOnKeyListener(new View.OnKeyListener() {
+
+                v.addTextChangedListener(new TextWatcher() {
+                    public void afterTextChanged(Editable s) {
+                        Log.i("starwisp", "textwatcher callback!");
+                        CallbackArgs(ctx,v.getId(),"\""+s.toString()+"\"");
+                    }
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                });
+
+/*                v.setOnKeyListener(new View.OnKeyListener() {
                     public boolean onKey(View a, int keyCode, KeyEvent event) {
-                        if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
-                            (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                        //if ((event.getAction() == KeyEvent.ACTION_DOWN) //&&
+                            // (keyCode == KeyEvent.KEYCODE_ENTER)
+                            //    ) {
+                            Log.i("starwisp", "input callback!");
                             CallbackArgs(ctx,v.getId(),"\""+v.getText()+"\"");
-                        }
+                            //}
                         return false;
                     }
                 });
-
+*/
                 parent.addView(v);
 
 
@@ -254,7 +280,7 @@ public class StarwispBuilder
                 Button v = new Button(ctx);
                 v.setId(arr.getInt(1));
                 v.setText(arr.getString(2));
-                v.setTextSize(arr.getInt(3));
+                v.setTextSize(TypedValue.COMPLEX_UNIT_PT, (int)(arr.getInt(3)*0.75));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
                 v.setTypeface(((StarwispActivity)ctx).m_Typeface);
                 final String fn = arr.getString(5);

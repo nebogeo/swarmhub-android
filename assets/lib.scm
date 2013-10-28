@@ -270,13 +270,14 @@
 (define (web-view-modify-text t v) (list-replace t 2 v))
 (define (web-view-layout t) (list-ref t 3))
 
-(define (edit-text id text size layout listener) (list "edit-text" id text size layout listener))
+(define (edit-text id text size type layout listener) (list "edit-text" id text size type layout listener))
 (define (edit-text-id t) (list-ref t 1))
 (define (edit-text-text t) (list-ref t 2))
 (define (edit-text-modify-text t v) (list-replace t 2 v))
 (define (edit-text-size t) (list-ref t 3))
-(define (edit-text-layout t) (list-ref t 4))
-(define (edit-text-listener t) (list-ref t 5))
+(define (edit-text-type t) (list-ref t 4))
+(define (edit-text-layout t) (list-ref t 5))
+(define (edit-text-listener t) (list-ref t 6))
 
 (define (button id text text-size layout listener) (list "button" id text text-size layout listener))
 (define (button-id t) (list-ref t 1))

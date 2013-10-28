@@ -4236,7 +4236,10 @@ static pointer opexe_6(scheme *sc, enum scheme_opcodes op) {
 ///////////// FLUXUS
      case OP_SEND:
           if (is_string(car(sc->args))) {
-               starwisp_data=string_value(car(sc->args));
+               if (starwisp_data!=NULL) {
+                    free(starwisp_data);
+               }
+               starwisp_data=strdup(string_value(car(sc->args)));
           }
           s_return(sc,sc->F);
 ////////////////////

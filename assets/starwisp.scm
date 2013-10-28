@@ -19,7 +19,7 @@
 (define FYM "Farmyard Manure")
 (define pig "Pig Slurry")
 (define poultry "Poultry Litter")
-(define normal "Normal")
+(define normal "All crops")
 (define grass-oilseed "Grassland/Winter oilseed rape")
 (define sandyshallow "Sandy/Shallow")
 (define mediumheavy "Medium/Heavy")
@@ -31,12 +31,12 @@
 (define other "Surface applied or old")
 (define layer "Layer manure")
 (define broiler "Broiler litter")
-(define metric "Metric")
-(define imperial "Imperial")
-(define DM2 "2% DM")
-(define DM4 "4% DM")
-(define DM6 "6% DM")
-(define DM10 "10% DM")
+(define metric "Kg/ha")
+(define imperial "units/acre")
+(define DM2 "2% DM (Thin soup)")
+(define DM4 "4% DM (Medium soup)")
+(define DM6 "6% DM (Thick soup)")
+(define DM10 "10% DM (Porridge)")
 
 (define images
   (list
@@ -611,7 +611,7 @@
 
 (define (build-key)
   (let ((units (if (equal? (current-units) metric)
-                   "kg/hectare"
+                   "Kg/hectare"
                    "units/acre")))
     (list
      (drawlist-text units 15 140 '(0 0 0) 15 "vertical")
@@ -831,15 +831,12 @@
    "email"
    (vert
     (text-view (make-id "title") "Export" 40 fillwrap)
-    (text-view (make-id "measure-text") "Email address to field data to" 20 fillwrap)
-    (edit-text (make-id "email") (current-email) 20 fillwrap
-               (lambda (v)
-                 (mutate-email! v)))
-    (button (make-id "email-button") "Email" 20 fillwrap
+    (text-view (make-id "measure-text") "Email export all field data" 20 fillwrap)
+    (button (make-id "email-button") "Send Email" 20 fillwrap
             (lambda ()
               (save-data "fields.csv" (stringify-fields))
               (list
-               (send-mail (current-email) "From your Crap Calculator"
+               (send-mail "" "From your Crap Calculator"
                           "Please find attached your field data."
                           (list (string-append dirname "fields.csv"))))))
     (button (make-id "finished") "Done" 20 fillwrap
@@ -911,10 +908,11 @@
 
     (text-view (make-id "camount-value") "4500 gallons" 30
                (layout 'wrap-content 'wrap-content 1 'centre))
+    (spacer 10)
     (horiz
-     (text-view (make-id "nt") "N/ha" 30 fillwrap)
-     (text-view (make-id "pt") "P/ha" 30 fillwrap)
-     (text-view (make-id "kt") "K/ha" 30 fillwrap))
+     (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
+     (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
+     (text-view (make-id "kt") "K Kg/ha" 20 fillwrap))
      (horiz
       (text-view (make-id "cna") "12" 30
                  (layout 'fill-parent 'fill-parent 1 'centre))
@@ -923,7 +921,7 @@
       (text-view (make-id "cka") "55" 30
                  (layout 'fill-parent 'fill-parent 1 'centre)))
 
-     (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
+     (image-view (make-id "example") "test" (layout 'fill-parent 350 1 'left))
 
      (button (make-id "finished") "Done" 20 fillwrap
              (lambda () (list (finish-activity 99)))))
@@ -933,10 +931,9 @@
    (lambda (activity arg)
      (if (equal? (current-units) metric) (list)
          (list
-
-          (update-widget 'text-view (get-id "nt") 'text "N/acre")
-          (update-widget 'text-view (get-id "pt") 'text "P/acre")
-          (update-widget 'text-view (get-id "kt") 'text "K/acre"))))
+          (update-widget 'text-view (get-id "nt") 'text "N units/acre")
+          (update-widget 'text-view (get-id "pt") 'text "P units/acre")
+          (update-widget 'text-view (get-id "kt") 'text "K units/acre"))))
    (lambda (activity) '())
    (lambda (activity) '())
    (lambda (activity) '())
@@ -948,64 +945,65 @@
     (vert
      (text-view (make-id "title") "Make a new field" 40 fillwrap)
      (text-view (make-id "name-txt") "Field name" 15 fillwrap)
-     (edit-text (make-id "name") "" 20 fillwrap
+     (edit-text (make-id "name") "" 20 "text" fillwrap
                 (lambda (v)
                   (mutate-state!
                    (lambda (s)
                      (state-modify-field
-                      s (field-modify-name (state-field s) v))))))
-      (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
-      (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
-               (lambda (v)
+                      s (field-modify-name (state-field s) v))))
+                  '()))
+     (text-view (make-id "soil-text") "Soil type" 15 fillwrap)
+     (spinner (make-id "soil") (list sandyshallow mediumheavy) fillwrap
+              (lambda (v)
+                (mutate-state!
+                 (lambda (s)
+                   (state-modify-field
+                    s (field-modify-soil (state-field s) v))))
+                '()))
+     (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
+     (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
+              (lambda (v)
+                (mutate-state!
+                 (lambda (s)
+                   (state-modify-field
+                    s (field-modify-crop (state-field s) v))))
+                '()))
+
+     (text-view (make-id "field-size-text")
+                (string-append
+                 "Field size in "
+                 (if (equal? (current-units) metric) "hectares" "acres"))
+                15 fillwrap)
+
+     (edit-text (make-id "field-size") "0" 20 "numeric" fillwrap
+                (lambda (v)
                   (mutate-state!
                    (lambda (s)
                      (state-modify-field
-                      s (field-modify-soil (state-field s) v))))))
-      (text-view (make-id "crop-text") "Crop type" 15 fillwrap)
-      (spinner (make-id "crop") (list normal grass-oilseed) fillwrap
-               (lambda (v)
-                 (mutate-state!
-                  (lambda (s)
-                    (state-modify-field
-                     s (field-modify-crop (state-field s) v))))))
+                      s (field-modify-size (state-field s) (string->number v)))))
+                  '()))
 
-      (text-view (make-id "field-size-text") "Field size" 15 fillwrap)
-
-      (seek-bar (make-id "field-size") 100 fillwrap
-                (lambda (v)
-                 (mutate-state!
-                  (lambda (s)
-                    (state-modify-field
-                     s (field-modify-size (state-field s) v))))
-                  (list
-                   (update-widget 'text-view (get-id "field-size-amount") 'text
-                                  (string-append (number->string v)
-                                                 (if (equal? (current-units) metric)
-                                                     " hectares" " acres"))))))
-
-      (text-view (make-id "field-size-amount") "" 15 fillwrap)
-
-      (horiz
-       (button (make-id "save") "Save" 20 fillwrap
-               (lambda ()
-                 (mutate-saved-data!
-                  (lambda (d)
-                    (saved-data-modify-fields
-                     d (append (saved-data-fields d) (list (current-field))))))
-                 (list (finish-activity 99))))
-       (button (make-id "cancel") "Cancel" 20 fillwrap
-               (lambda () (list (finish-activity 99)))))
-      )
+     (horiz
+      (button (make-id "save") "Save" 20 fillwrap
+              (lambda ()
+                (mutate-saved-data!
+                 (lambda (d)
+                   (saved-data-modify-fields
+                    d (append (saved-data-fields d) (list (current-field))))))
+                (list (finish-activity 99))))
+      (button (make-id "cancel") "Cancel" 20 fillwrap
+              (lambda () (list (finish-activity 99)))))
+     )
 
     (lambda (activity arg)
       (activity-layout activity))
     (lambda (activity arg)
       (list
-       (update-widget 'text-view (get-id "field-size-amount") 'text
+       (update-widget 'text-view (get-id "field-size-text") 'text
                       (string-append
-                       "50"
+                       "Field size in "
                        (if (equal? (current-units) metric)
-                           " hectares" " acres")))))
+                           "hectares" "acres")))))
     (lambda (activity) '())
     (lambda (activity) '())
     (lambda (activity) '())
@@ -1129,15 +1127,15 @@
                 (layout 'wrap-content 'wrap-content 1 'centre))
 
      (horiz
-       (text-view (make-id "nt") "N/ha" 30 fillwrap)
-       (text-view (make-id "pt") "P/ha" 30 fillwrap)
-       (text-view (make-id "kt") "K/ha" 30 fillwrap))
+       (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
+       (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
+       (text-view (make-id "kt") "K Kg/ha" 20 fillwrap))
      (horiz
         (text-view (make-id "fcna") "12" 30 fillwrap)
         (text-view (make-id "fcpa") "75" 30 fillwrap)
         (text-view (make-id "fcka") "55" 30 fillwrap))
 
-     (image-view (make-id "example") "test" (layout 'wrap-content 250 1 'left))
+     (image-view (make-id "example") "test" (layout 'fill-parent 350 1 'left))
 ;;     (button (make-id "camera") "Camera" 20 fillwrap
 ;;             (lambda () (list (start-activity "camera" 2 ""))))
 
@@ -1186,9 +1184,9 @@
      (append
       (if (equal? (current-units) metric) (list)
           (list
-           (update-widget 'text-view (get-id "nt") 'text "N/acre")
-           (update-widget 'text-view (get-id "pt") 'text "P/acre")
-           (update-widget 'text-view (get-id "kt") 'text "K/acre")))
+           (update-widget 'text-view (get-id "nt") 'text "N units/acre")
+           (update-widget 'text-view (get-id "pt") 'text "P units/acre")
+           (update-widget 'text-view (get-id "kt") 'text "K units/acre")))
       (list
        (update-widget 'text-view (get-id "fieldcalc-title") 'text (field-name (current-field))))))
    (lambda (activity) '())
@@ -1219,9 +1217,9 @@
     (item "total-amount" "Total Amount")
 
     (horiz
-     (text-view (make-id "nt") "N/ha" 30 fillwrap)
-     (text-view (make-id "pt") "P/ha" 30 fillwrap)
-     (text-view (make-id "kt") "K/ha" 30 fillwrap))
+     (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
+     (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
+     (text-view (make-id "kt") "K Kg/ha" 20 fillwrap))
      (horiz
       (text-view (make-id "fcna") "12" 30 fillwrap)
       (text-view (make-id "fcpa") "75" 30 fillwrap)
@@ -1304,9 +1302,9 @@
      (append
       (if (equal? (event-units (current-event)) metric) (list)
           (list
-           (update-widget 'text-view (get-id "nt") 'text "N/acre")
-           (update-widget 'text-view (get-id "pt") 'text "P/acre")
-           (update-widget 'text-view (get-id "kt") 'text "K/acre")))
+           (update-widget 'text-view (get-id "nt") 'text "N units/acre")
+           (update-widget 'text-view (get-id "pt") 'text "P units/acre")
+           (update-widget 'text-view (get-id "kt") 'text "K units/acre")))
       (let ((type (event-type (current-event))))
         (list
          (update-widget 'text-view (get-id "fcna") 'text (list-ref (event-nutrients (current-event)) 0))
@@ -1360,7 +1358,7 @@
    "camera"
    (horiz
     (vert
-     (camera-preview (make-id "camera") (layout 'wrap-content 220 1 'left))
+     (camera-preview (make-id "camera") (layout 'fill-parent 320 1 'left))
      (button (make-id "take-pic") "Take photo" 10 fillwrap
             (lambda ()
               (let ((path (string-append
@@ -1372,7 +1370,7 @@
                  (make-directory path)
                  (update-widget 'camera-preview (get-id "camera") 'take-picture path))))))
     (vert
-     (image-view (make-id "example") "test" (layout 'wrap-content 220 1 'left))
+     (image-view (make-id "example") "test" (layout 'fill-parent 320 1 'left))
      (button (make-id "back") "Back" 10 fillwrap
              (lambda ()
                (list

@@ -40,12 +40,15 @@ class PictureTaker
 
     private void OpenCamera(SurfaceView view) {
         try {
-            mCam = Camera.open();
-            if (mCam == null) {
-                return;
+            int nc = Camera.getNumberOfCameras();
+            if (nc>0) {
+                mCam = Camera.open(0);
+                if (mCam == null) {
+                    return;
+                }
+                mCam.setPreviewDisplay(view.getHolder());
+                mCam.startPreview();
             }
-            mCam.setPreviewDisplay(view.getHolder());
-            mCam.startPreview();
         }
         catch (Exception e) {
             Log.i("starwisp","Problem opening camera! " + e);
