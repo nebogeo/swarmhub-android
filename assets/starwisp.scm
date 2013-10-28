@@ -510,7 +510,7 @@
      (number->string (convert-output (list-ref (event-nutrients event) 1) "kg/ha")) ", "
      (number->string (convert-output (list-ref (event-nutrients event) 2) "kg/ha")) ", "
      "\"" (if (equal? (current-units) metric) "kg/ha" "units/acre") "\", "
-     (number->string (convert-output (event-amount event) aunits)) ", "
+     (number->string (convert-output (event-amount event) nunits)) ", "
      "\"" nunits "\","
      (number->string (convert-output (* size (event-amount event)) aunits)) ", "
      "\"" aunits "\", "
