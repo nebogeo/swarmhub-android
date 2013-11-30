@@ -815,21 +815,21 @@
 (define (date->season d)
   (cond
    ((or
+     (eqv? (list-ref d 1) 2)
      (eqv? (list-ref d 1) 3)
-     (eqv? (list-ref d 1) 4)
-     (eqv? (list-ref d 1) 5)) spring)
+     (eqv? (list-ref d 1) 4)) spring)
    ((or
+     (eqv? (list-ref d 1) 5)
      (eqv? (list-ref d 1) 6)
-     (eqv? (list-ref d 1) 7)
-     (eqv? (list-ref d 1) 8)) summer)
+     (eqv? (list-ref d 1) 7)) summer)
    ((or
+     (eqv? (list-ref d 1) 8)
      (eqv? (list-ref d 1) 9)
-     (eqv? (list-ref d 1) 10)
-     (eqv? (list-ref d 1) 11)) autumn)
+     (eqv? (list-ref d 1) 10)) autumn)
    ((or
+     (eqv? (list-ref d 1) 11)
      (eqv? (list-ref d 1) 12)
-     (eqv? (list-ref d 1) 1)
-     (eqv? (list-ref d 1) 2)) winter)))
+     (eqv? (list-ref d 1) 1)) winter)))
 
 (define centre-layout (layout 'wrap-content 'wrap-content 1 'centre))
 
