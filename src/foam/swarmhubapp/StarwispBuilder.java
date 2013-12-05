@@ -31,8 +31,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
 import android.widget.Button;
+import android.widget.ToggleButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -67,6 +69,10 @@ import java.text.DateFormat;
 import java.util.List;
 import android.content.DialogInterface;
 import android.util.TypedValue;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.PorterDuff;
 
 import android.app.TimePickerDialog;
 import android.app.DatePickerDialog;
@@ -179,7 +185,8 @@ public class StarwispBuilder
                 ImageView v = new ImageView(ctx);
                 v.setId(arr.getInt(1));
                 v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(3)));
-
+                //v.setScaleType(ScaleType.CENTER_INSIDE);
+                v.setAdjustViewBounds(true);
                 String image = arr.getString(2);
 
                 if (image.startsWith("/")) {
@@ -292,6 +299,32 @@ public class StarwispBuilder
                 parent.addView(v);
             }
 
+
+            if (type.equals("toggle-button")) {
+                ToggleButton v;
+//                if (arr.getString(5).equals("plain")) {
+                    v = new ToggleButton(ctx);
+//                } else {
+//                    v = (ToggleButton)ctx.getLayoutInflater().inflate(R.layout.toggle_button_fancy, null);
+//                }
+
+                v.setId(arr.getInt(1));
+                v.setText(arr.getString(2));
+                v.setTextSize(arr.getInt(3));
+                v.setLayoutParams(BuildLayoutParams(arr.getJSONArray(4)));
+                v.setTypeface(((StarwispActivity)ctx).m_Typeface);
+                final String fn = arr.getString(6);
+                v.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        String arg="#f";
+                        if (((ToggleButton) v).isChecked()) arg="#t";
+                        CallbackArgs(ctx,v.getId(),arg);
+                    }
+                });
+                parent.addView(v);
+            }
+
+
             if (type.equals("seek-bar")) {
                 SeekBar v = new SeekBar(ctx);
                 v.setId(arr.getInt(1));
@@ -302,7 +335,21 @@ public class StarwispBuilder
 
                 v.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                     public void onProgressChanged(SeekBar v, int a, boolean s) {
+                        LayerDrawable ld = (LayerDrawable) v.getProgressDrawable();
+                        ClipDrawable d1 = (ClipDrawable) ld.findDrawableByLayerId(R.id.seekprogress);
+                        int c=(int)((a/100.0f)*255.0f);
+                        int mc = 255-c;
+                        d1.setColorFilter(Color.argb(127,c,mc,mc), PorterDuff.Mode.SRC_OVER);
+
+
+                        //ShapeDrawable sd = (ShapeDrawable) v.getThumbDrawable();
+
+
+
                         CallbackArgs(ctx,v.getId(),Integer.toString(a));
+
+
+
                     }
                     public void onStartTrackingTouch(SeekBar v) {}
                     public void onStopTrackingTouch(SeekBar v) {}
@@ -630,6 +677,31 @@ public class StarwispBuilder
                 }
                 return;
             }
+
+            if (type.equals("toggle-button")) {
+                ToggleButton v = (ToggleButton)vv;
+                if (token.equals("text")) {
+                    v.setText(arr.getString(3));
+                    return;
+                }
+
+                if (token.equals("checked")) {
+                    if (arr.getInt(3)==0) v.setChecked(false);
+                    else v.setChecked(true);
+                    return;
+                }
+
+                if (token.equals("listener")) {
+                    final String fn = arr.getString(3);
+                    v.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+                            m_Scheme.eval("("+fn+")");
+                        }
+                    });
+                }
+                return;
+            }
+
 
             if (type.equals("canvas")) {
                 StarwispCanvas v = (StarwispCanvas)vv;

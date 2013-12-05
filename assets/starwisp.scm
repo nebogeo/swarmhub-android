@@ -27,8 +27,11 @@
 (define winter "Winter")
 (define spring "Spring")
 (define summer "Summer")
-(define fresh "Soil incorporated, fresh")
-(define other "Surface applied or old")
+(define fresh "Fresh and soil incorporated")
+(define other "Old and soil incorporated")
+(define other1 "Fresh and surface applied")
+(define other2 "Old and surface applied")
+
 (define layer "Layer manure")
 (define broiler "Broiler litter")
 (define metric "Kg/ha")
@@ -210,7 +213,14 @@
       (kg/ha->units/acre amount)))
 
 (define (rounding a)
+  (/ (round (* 10 a)) 10))
+
+(define (rounding-cash a)
   (/ (round (* 100 a)) 100))
+
+(define (padcash->string a)
+  (let ((t (number->string (+ (rounding-cash a) 0.001))))
+    (substring t 0 (- (string-length t) 1))))
 
 (define (convert-input amount units)
   (if (equal? (current-units) metric)
@@ -580,7 +590,7 @@
             "gallons"
             "tonnes"))))
 
-
+(define costs (list 0.79 0.62 0.49))
 
 (define (run-calc prepend)
   (let ((amounts (calc-nutrients))
@@ -594,7 +604,15 @@
      (update-widget 'text-view (get-id (string-append prepend "pa"))
                     'text (number->string (convert-output (list-ref amounts 1) "kg/ha")))
      (update-widget 'text-view (get-id (string-append prepend "ka"))
-                    'text (number->string (convert-output (list-ref amounts 2) "kg/ha"))))))
+                    'text (number->string (convert-output (list-ref amounts 2) "kg/ha")))
+     ;; costs
+     (update-widget 'text-view (get-id (string-append prepend "costn"))
+                    'text (padcash->string (* (list-ref amounts 0) (list-ref costs 0))))
+     (update-widget 'text-view (get-id (string-append prepend "costp"))
+                    'text (padcash->string (* (list-ref amounts 1) (list-ref costs 1))))
+     (update-widget 'text-view (get-id (string-append prepend "costk"))
+                    'text (padcash->string (* (list-ref amounts 2) (list-ref costs 2))))
+     )))
 
 (define (spacer size)
   (space (layout 'fill-parent size 1 'left)))
@@ -611,15 +629,39 @@
                     (last-point (car r))
                     (points-list (cadr r))
                     (x (* graph-width (/ (- t min) twidth)))
-                    (y (- 200 (list-ref (event-nutrients event) n))))
+                    (y (- 250 (list-ref (event-nutrients event) n))))
                (list
                 (list x y)
                 (cons (drawlist-line
                        colour 5 (list (car last-point) (cadr last-point)
                                       x y))
                       points-list))))
-           (list (list -10 200) '())
+           (list (list -10 250) '())
            events))))
+
+(define (build-bars events min max)
+  (let* ((twidth (- max min))
+         (month-width (* (/ 30 twidth) graph-width)))
+    (foldl
+     (lambda (event r)
+       (let* ((t (date->day (event-date event)))
+              (x (* graph-width (/ (- t min) twidth)))
+              (y1 (- 250 (list-ref (event-nutrients event) 0)))
+              (y2 (- 250 (list-ref (event-nutrients event) 1)))
+              (y3 (- 250 (list-ref (event-nutrients event) 2))))
+         (append
+          (if (< month-width 20)
+              (list
+               (drawlist-line '(200 0 0) 3 (list x 250 x y1))
+               (drawlist-line '(200 200 0) 3 (list (+ x 3) 250 (+ x 3) y2))
+               (drawlist-line '(0 0 200) 3 (list (+ x 6) 250 (+ x 6) y3)))
+              (list
+               (drawlist-line '(200 0 0) 10 (list x 250 x y1))
+               (drawlist-line '(200 200 0) 10 (list (+ x 5) 250 (+ x 5) y2))
+               (drawlist-line '(0 0 200) 10 (list (+ x 10) 250 (+ x 10) y3))))
+          r)))
+     '()
+     events)))
 
 (define (month->text m)
   (cond
@@ -647,7 +689,7 @@
                          (- x (/ year-width 2))
                          180 '(150 150 150) 20 "vertical")
           (drawlist-line '(0 0 0) 1
-                         (list x 0 x 200)))
+                         (list x 0 x 250)))
          (_y year-width (+ x year-width) (+ y 1)))))
 
   (define (_m month-width x m)
@@ -659,7 +701,7 @@
                          (- x (/ month-width 2))
                          180 '(0 0 0) 20 "vertical")
           (drawlist-line '(0 0 0) 1
-                         (list x 0 x 200)))
+                         (list x 0 x 250)))
          (_m month-width (+ x month-width) (modulo (+ m 1) 12)))))
 
   (let* ((twidth (- max min))
@@ -678,14 +720,16 @@
   (let ((units (if (equal? (current-units) metric)
                    "Kg/hectare"
                    "units/acre"))
-        (a (if (equal? (current-units) metric) 150 (convert-output 150 "kg/ha")))
-        (b (if (equal? (current-units) metric) 100 (convert-output 100 "kg/ha")))
-        (c (if (equal? (current-units) metric) 50 (convert-output 50 "kg/ha"))))
+        (a (if (equal? (current-units) metric) 100 (convert-output 200 "kg/ha")))
+        (b (if (equal? (current-units) metric) 150 (convert-output 150 "kg/ha")))
+        (c (if (equal? (current-units) metric) 100 (convert-output 100 "kg/ha")))
+        (d (if (equal? (current-units) metric) 50 (convert-output 50 "kg/ha"))))
     (list
-     (drawlist-text units 15 140 '(0 0 0) 15 "vertical")
+     (drawlist-text units 15 180 '(0 0 0) 15 "vertical")
      (drawlist-text a 20 50 '(0 0 0) 10 "horizontal")
      (drawlist-text b 20 100 '(0 0 0) 10 "horizontal")
      (drawlist-text c 20 150 '(0 0 0) 10 "horizontal")
+     (drawlist-text d 20 200 '(0 0 0) 10 "horizontal")
      (drawlist-text "N" 280 30 '(200 0 0) 20 "horizontal")
      (drawlist-text "P" 280 60 '(200 200 0) 20 "horizontal")
      (drawlist-text "K" 280 90 '(0 0 200) 20 "horizontal")
@@ -695,19 +739,20 @@
   (append
    (let ((events (field-events (current-field))))
      (if (> (length events) 1)
-         (let ((min (date->day (event-date (car events))))
-               (max (date->day (event-date (list-ref events (- (length events) 1))))))
+         (let* ((_min (date->day (event-date (car events))))
+                (_max (date->day (event-date (list-ref events (- (length events) 1)))))
+                (safe (* (- _max _min) 0.1))
+                (min (- _min safe))
+                (max (+ _max safe)))
            (append
             (build-t-scale (event-date (car events)) min max)
-            (build-lines events min max '(200 0 0) 0)
-            (build-lines events min max '(200 200 0) 1)
-            (build-lines events min max '(0 0 200) 2)
+            (build-bars events min max)
             (build-key)))
          (list (drawlist-text "Not enough events for graph"
                               20 105 '(0 0 0) 20 "horizontal"))))
    (list
     (drawlist-line '(0 0 0) 5 (list 0 0 320 0))
-    (drawlist-line '(0 0 0) 5 (list 0 200 320 200)))))
+    (drawlist-line '(0 0 0) 5 (list 0 250 320 250)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -841,12 +886,14 @@
     (text-view (make-id "splash-title") "The Farm Crap App" 40 centre-layout)
     (text-view (make-id "splash-about") "Manage your muck with the Farm Crap App" 20 centre-layout)
     (spacer 20)
-    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am/kernow'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 20 centre-layout)
-    (spacer 20)
-    (image-view (make-id "about-logo") "logo" fillwrap)
+    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am/kernow'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 15 centre-layout)
     (spacer 20)
     (button (make-id "f2") "Get started!" 20 fillwrap
-            (lambda () (list (start-activity-goto "main" 2 "")))))
+            (lambda () (list (start-activity-goto "main" 2 ""))))
+    (spacer 20)
+    (text-view (make-id "splash-discl") "The Farm Crap App offers information for guidance purposes only and is not intended to amount to professional advice or opinion. FoAM Kernow, Duchy College, and Rothamsted Research North Wyke cannot be held responsible for any losses or damage resulting from the use of information provided by this app." 15 centre-layout)
+    (image-view (make-id "about-logo") "logo" fillwrap)
+    )
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg) '())
@@ -876,6 +923,7 @@
              (lambda (v)
                (mutate-units! v)
                (list)))
+    (spacer 20)
     (button (make-id "f2") "Calculator" 20 fillwrap
             (lambda () (list (start-activity "calc" 2 ""))))
     (button (make-id "email-button") "Export" 20 fillwrap
@@ -946,7 +994,7 @@
                                  ((equal? v cattle) (list DM2 DM6 DM10))
                                   ((equal? v pig) (list DM2 DM4-pig DM6-pig))
                                   ((equal? v poultry) (list layer broiler))
-                                  ((equal? v FYM) (list fresh other))))
+                                  ((equal? v FYM) (list fresh other other1 other2))))
 
                  (update-widget 'image-view (get-id "example") 'image
                                 (find-image (calc-type (current-calc))
@@ -970,9 +1018,15 @@
      (vert
       (text-view (make-id "quality-text") "Quality" 15 fillwrap)
       (spinner (make-id "cquality") (list DM2 DM4 DM6) fillwrap
-                (lambda (v) (update-quality! "c" v)))))
+               (lambda (v)
+                 (update-quality!
+                  "c"
+                  (cond
+                   ((equal? v other1) other)
+                   ((equal? v other2) other)
+                   (else v)))))))
 
-    (text-view (make-id "amount-text") "Amount" 15 fillwrap)
+    (text-view (make-id "amount-text") "Application Rate" 15 fillwrap)
     (seek-bar (make-id "amount") 100 fillwrap
               (lambda (v)
                 (append
@@ -985,28 +1039,92 @@
     (text-view (make-id "camount-value") "4500 gallons" 30
                (layout 'wrap-content 'wrap-content 1 'centre))
     (spacer 10)
-    (horiz
-     (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
-     (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
-     (text-view (make-id "kt") "K Kg/ha" 20 fillwrap))
-     (horiz
-      (text-view (make-id "cna") "12" 30
-                 (layout 'fill-parent 'fill-parent 1 'centre))
-      (text-view (make-id "cpa") "75" 30
-                 (layout 'fill-parent 'fill-parent 1 'centre))
-      (text-view (make-id "cka") "55" 30
-                 (layout 'fill-parent 'fill-parent 1 'centre)))
 
-     (image-view (make-id "example") "test" (layout 'fill-parent 350 1 'left))
+    (linear-layout
+      (make-id "out-crop")
+      'vertical
+      (layout 'fill-parent 'wrap-content 1 'centre)
+      (list
+       (text-view (make-id "out-crop-text") "Crop Availible" 15 fillwrap)
+       (linear-layout
+        (make-id "h")
+        'horizontal
+        (layout 'fill-parent 'wrap-content 1 'centre)
+        (list
+         (text-view (make-id "nt") "N Kg/ha" 20 wrap)
+         (text-view (make-id "pt") "P Kg/ha" 20 wrap)
+         (text-view (make-id "kt") "K Kg/ha" 20 wrap)))
+       (horiz
+        (text-view (make-id "cna") "12" 30
+                   wrap)
+        (text-view (make-id "cpa") "75" 30
+                   wrap)
+        (text-view (make-id "cka") "55" 30
+                   wrap))))
 
-     (button (make-id "finished") "Done" 20 fillwrap
-             (lambda () (list (finish-activity 99)))))
+    (linear-layout
+     (make-id "out-cost")
+     'vertical
+     (layout 'fill-parent 'wrap-content 1 'centre)
+     (list
+      (text-view (make-id "cost-text") "Estimated Equivalent Price" 15 fillwrap)
+      (linear-layout
+       (make-id "h")
+       'horizontal
+       (layout 'fill-parent 'wrap-content 1 'centre)
+       (list
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imn") "pound" wrap)
+          (text-view (make-id "ccostn") "12" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imp") "pound" wrap)
+          (text-view (make-id "ccostp") "75" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imk") "pound" wrap)
+          (text-view (make-id "ccostk") "55" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+        ))))
+
+;    (toggle-button (make-id "switcher") "Cost" 15 (layout 'wrap-content 'fill-parent 1 'centre) "plain"
+;                    (lambda (v)
+;                      (if v
+;                          (list
+;                           (update-widget 'linear-layout (get-id "out-crop") 'hide 0)
+;                           (update-widget 'linear-layout (get-id "out-cost") 'show 0))
+;                          (list
+;                           (update-widget 'linear-layout (get-id "out-crop") 'show 0)
+;                           (update-widget 'linear-layout (get-id "out-cost") 'hide 0)))))
+    (spacer 10)
+    (image-view (make-id "example") "test" (layout 'fill-parent 'fill-parent 1 'centre))
+    (spacer 10)
+
+    (button (make-id "finished") "Done" 20 fillwrap
+            (lambda () (list (finish-activity 99)))))
 
    (lambda (activity arg)
      (activity-layout activity))
    (lambda (activity arg)
      (append
       (list
+ ;      (update-widget 'linear-layout (get-id "out-crop") 'show 0)
+ ;      (update-widget 'linear-layout (get-id "out-cost") 'hide 0)
        (update-widget 'seek-bar (get-id "amount") 'init 0)
        (update-widget 'image-view (get-id "example") 'image
                       (find-image (calc-type (current-calc))
@@ -1028,6 +1146,7 @@
     (vert
      (text-view (make-id "title") "Make a new field" 40 fillwrap)
      (text-view (make-id "name-txt") "Field name" 15 fillwrap)
+
      (edit-text (make-id "name") "" 20 "text" fillwrap
                 (lambda (v)
                   (mutate-state!
@@ -1101,7 +1220,7 @@
     (vert
      (text-view (make-id "field-title") "Long Meadow" 40 fillwrap)
      (canvas (make-id "graph")
-             (layout 'fill-parent 200 1 'centre)
+             (layout 'fill-parent 250 1 'centre)
              (list))
      (text-view (make-id "events-txt") "Events" 20 fillwrap)
      (linear-layout
@@ -1113,7 +1232,7 @@
      (button (make-id "event") "New spreading event" 20 fillwrap
              (lambda ()
                (list (start-activity "fieldcalc" 2 ""))))
-
+     (spacer 20)
      (horiz
       (button (make-id "delete") "Delete" 20 (layout 'fill-parent 'wrap-content 0.7 'left)
               (lambda ()
@@ -1197,13 +1316,19 @@
                                     ((equal? v cattle) (list DM2 DM6 DM10))
                                     ((equal? v pig) (list DM2 DM4-pig DM6-pig))
                                     ((equal? v poultry) (list layer broiler))
-                                    ((equal? v FYM) (list fresh other)))))))))
+                                    ((equal? v FYM) (list fresh other other1 other2)))))))))
 
       (vert
        (text-view (make-id "quality-text") "Quality" 15 fillwrap)
        (spinner (make-id "quality") (list DM2 DM4 DM6) fillwrap
-                (lambda (v) (update-quality! "fc" v)))))
-     (text-view (make-id "amount-text") "Amount" 15 fillwrap)
+                (lambda (v)
+                  (update-quality!
+                   "fc"
+                   (cond
+                    ((equal? v other1) other)
+                    ((equal? v other2) other)
+                    (else v)))))))
+     (text-view (make-id "amount-text") "Application Rate" 15 fillwrap)
      (seek-bar (make-id "amount") 100 fillwrap
               (lambda (v)
                 (cons
@@ -1214,18 +1339,91 @@
      (text-view (make-id "fcamount-value") "4500 gallons" 30
                 (layout 'wrap-content 'wrap-content 1 'centre))
 
-     (horiz
-       (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
-       (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
-       (text-view (make-id "kt") "K Kg/ha" 20 fillwrap))
-     (horiz
-        (text-view (make-id "fcna") "12" 30 fillwrap)
-        (text-view (make-id "fcpa") "75" 30 fillwrap)
-        (text-view (make-id "fcka") "55" 30 fillwrap))
 
-     (image-view (make-id "example") "test" (layout 'fill-parent 350 1 'left))
+    (linear-layout
+      (make-id "out-crop")
+      'vertical
+      (layout 'fill-parent 'wrap-content 1 'centre)
+      (list
+       (text-view (make-id "out-crop-text") "Crop Availible" 15 fillwrap)
+       (linear-layout
+        (make-id "h")
+        'horizontal
+        (layout 'fill-parent 'wrap-content 1 'centre)
+        (list
+         (text-view (make-id "nt") "N Kg/ha" 20 wrap)
+         (text-view (make-id "pt") "P Kg/ha" 20 wrap)
+         (text-view (make-id "kt") "K Kg/ha" 20 wrap)))
+       (horiz
+        (text-view (make-id "fcna") "12" 30
+                   wrap)
+        (text-view (make-id "fcpa") "75" 30
+                   wrap)
+        (text-view (make-id "fcka") "55" 30
+                   wrap))))
+
+
+    (linear-layout
+     (make-id "out-cost")
+     'vertical
+     (layout 'fill-parent 'wrap-content 1 'centre)
+     (list
+      (text-view (make-id "cost-text") "Estimated Equivalent Price" 15 fillwrap)
+      (linear-layout
+       (make-id "h")
+       'horizontal
+       (layout 'fill-parent 'wrap-content 1 'centre)
+       (list
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imn") "pound" wrap)
+          (text-view (make-id "fccostn") "12" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imp") "pound" wrap)
+          (text-view (make-id "fccostp") "75" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imk") "pound" wrap)
+          (text-view (make-id "fccostk") "55" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+        ))))
+
+;    (toggle-button (make-id "switcher") "Cost" 15 (layout 'wrap-content 'fill-parent 1 'centre) "plain"
+;                    (lambda (v)
+;                      (if v
+;                          (list
+;                           (update-widget 'linear-layout (get-id "out-crop") 'hide 0)
+;                           (update-widget 'linear-layout (get-id "out-cost") 'show 0))
+;                          (list
+;                           (update-widget 'linear-layout (get-id "out-crop") 'show 0)
+;                           (update-widget 'linear-layout (get-id "out-cost") 'hide 0)))))
+    (spacer 10)
+    (image-view (make-id "example") "test" (layout 'fill-parent 'fill-parent 1 'centre))
+
+
+
+    (spacer 10)
+
+
 ;;     (button (make-id "camera") "Camera" 20 fillwrap
 ;;             (lambda () (list (start-activity "camera" 2 ""))))
+
+     (spacer 10)
 
      (horiz
       (button (make-id "save") "Save" 20 fillwrap
@@ -1483,15 +1681,19 @@
     (text-view (make-id "about-title") "About" 40 fillwrap)
     (text-view (make-id "about-text")
                "Welcome to the Farm Crap App designed to help farmers make the most of your manure (slurry, FYM and poultry litter). The app contains 3 components; the calculator, the image library (to which you can add your own photos), and the record sheets. The calculator will determine the amount of crop-available key nutrients (N, P & K) within the manure at different spreading rates helping you decide how much to spread in order to meet the crop requirements, and also what this looks like."
-               20 fillwrap)
+               15 fillwrap)
     (spacer 20)
     (text-view (make-id "about-text2")
                "The image library can be used as a visual reference guide to estimate the spreading rate of manure already applied to the field and therefore calculate the amount of crop available nutrients that have been applied."
-               20 fillwrap)
+               15 fillwrap)
     (spacer 20)
     (text-view (make-id "about-text3")
                "The Farm Crap App can also be used to keep records of spreading events per field, how much manure was spread and what this translates to in terms of applied nutrients. You can also upload a photo of the spreading event. The records can be emailed to you to be stored on your computer."
-               20 fillwrap)
+               15 fillwrap)
+    (spacer 20)
+    (text-view (make-id "about-text4")
+               "The data for the Farm Crap App has been compiled from <a href='http://www.swarmhub.co.uk/index.php?dlrid=3956'>Defra RB209 Fertiliser Manual</a> and the <a href='http://www.swarmhub.co.uk/think_manure.php?id=3121'>Think Manures handbook</a>."
+               15 fillwrap)
     (spacer 20)
     (button (make-id "back") "Get started!" 20 fillwrap
             (lambda ()

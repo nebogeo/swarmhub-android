@@ -308,6 +308,9 @@
 (define (button-layout t) (list-ref t 4))
 (define (button-listener t) (list-ref t 5))
 
+(define (toggle-button id text text-size layout style listener) (list "toggle-button" id text text-size layout style listener))
+(define (toggle-button-listener t) (list-ref t 6))
+
 (define (seek-bar id max layout listener) (list "seek-bar" id max layout listener))
 (define (seek-bar-id t) (list-ref t 1))
 (define (seek-bar-max t) (list-ref t 2))
@@ -327,6 +330,7 @@
 
 (define (drawlist-line colour width points) (list "line" colour width points))
 (define (drawlist-text text x y colour size align) (list "text" text x y colour size align))
+(define (drawlist-rect colour points) (list "rect" colour points))
 
 (define (toast msg) (list "toast" 0 "toast" msg))
 (define (make-directory name) (list "make-directory" 0 "make-directory" name))
@@ -504,6 +508,8 @@
                        ((edit-text-listener widget) (car args)))
                       ((equal? (widget-type widget) "button")
                        ((button-listener widget)))
+                      ((equal? (widget-type widget) "toggle-button")
+                       ((toggle-button-listener widget) (car args)))
                       ((equal? (widget-type widget) "seek-bar")
                        ((seek-bar-listener widget) (car args)))
                       ((equal? (widget-type widget) "spinner")

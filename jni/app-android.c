@@ -37,6 +37,20 @@ jstring Java_foam_swarmhubapp_Scheme_nativeEval(JNIEnv* env, jobject thiz, jstri
    scheme_load_string(sc,native_code);
    fflush(log_file);
    (*env)->ReleaseStringUTFChars(env, code, native_code);
-   if (starwisp_data!=NULL) return (*env)->NewStringUTF(env,starwisp_data);
+   if (starwisp_data!=NULL) {
+       jstring ret = (*env)->NewStringUTF(env,starwisp_data);
+       free(starwisp_data);
+       starwisp_data=NULL;
+       return ret;
+   }
    return (*env)->NewStringUTF(env,"");
+
+
+
+/*   const char *native_code = (*env)->GetStringUTFChars(env, code, 0);
+   scheme_load_string(sc,native_code);
+   fflush(log_file);
+   (*env)->ReleaseStringUTFChars(env, code, native_code);
+   if (starwisp_data!=NULL) return (*env)->NewStringUTF(env,starwisp_data);
+   return (*env)->NewStringUTF(env,"");*/
 }
