@@ -43,11 +43,14 @@
 (define DM4-pig "4% DM (Thick soup)")
 (define DM6-pig "6% DM (Porridge)")
 
+(define costs (list 0.79 0.62 0.49))
+
 (define images
   (list
    (list cattle
          (list
           (list 25 "cattle_25m3")
+          (list 30 "cattle_30m3")
           (list 50 "cattle_50m3")
           (list 100 "cattle_100m3")))
    (list FYM
@@ -57,7 +60,8 @@
    (list pig
          (list
           (list 25 "pig_25m3")
-          (list 50 "pig_50m3")))
+          (list 50 "pig_50m3")
+          (list 75 "pig_75m3")))
    (list poultry
          (list
           (list 5 "poultry_5t")
@@ -489,43 +493,56 @@
 
 (define (csv-headings)
   (string-append
-   "\"Field name\", "
-   "\"Size\", "
-   "\"Size units\", "
-   "\"Soil\", "
-   "\"Crop\", "
-   "\"Manure\", "
-   "\"Date\", "
-   "\"N\", \"P\", \"K\", "
-   "\"Nutrient units\", "
-   "\"Amount\", "
-   "\"Amount units\", "
-   "\"Total Amount\", "
-   "\"Total units\", "
-   "\"Quality\", "
-   "\"Season\"\n"))
+   "Sield name\t"
+   "Size\t"
+   "Size units\t"
+   "Soil\t"
+   "Crop\t"
+   "Manure\t"
+   "Date\t"
+   "N\t P\t K\t Nutrient units\t"
+   "Amount\t"
+   "Amount units\t"
+   "Total Amount\t"
+   "Total units\t"
+   "Quality\t"
+   "Season\t"
+   "N Field Saving\t"
+   "P Field Saving\t"
+   "K Field Saving\t"
+   "N Unit price\t"
+   "P Unit price\t"
+   "K Unit price\n"
+   ))
 
 (define (stringify-event event name soil crop size)
   (let ((aunits (amount-units event))
         (nunits (nutrient-units event)))
     (string-append
-     "\"" name "\", "
-     (number->string (convert-output size "hectares")) ", "
-     "\"" (if (equal? (current-units) metric) "ha" "acres") "\", "
-     "\"" soil "\", "
-     "\"" crop "\", "
-     "\"" (event-type event) "\", "
-     "\"" (date->string (event-date event)) "\", "
-     (number->string (convert-output (list-ref (event-nutrients event) 0) "kg/ha")) ", "
-     (number->string (convert-output (list-ref (event-nutrients event) 1) "kg/ha")) ", "
-     (number->string (convert-output (list-ref (event-nutrients event) 2) "kg/ha")) ", "
-     "\"" (if (equal? (current-units) metric) "kg/ha" "units/acre") "\", "
-     (number->string (convert-output (event-amount event) nunits)) ", "
-     "\"" nunits "\","
-     (number->string (convert-output (* size (event-amount event)) aunits)) ", "
-     "\"" aunits "\", "
-     "\"" (event-quality event) "\", "
-     "\"" (event-season event) "\"")))
+     name "\t"
+     (number->string (convert-output size "hectares")) "\t"
+     (if (equal? (current-units) metric) "ha" "acres") "\t"
+     soil "\t"
+     crop "\t"
+     (event-type event) "\t"
+     (date->string (event-date event)) "\t"
+     (number->string (convert-output (list-ref (event-nutrients event) 0) "kg/ha")) "\t"
+     (number->string (convert-output (list-ref (event-nutrients event) 1) "kg/ha")) "\t"
+     (number->string (convert-output (list-ref (event-nutrients event) 2) "kg/ha")) "\t"
+     (if (equal? (current-units) metric) "kg/ha" "units/acre") "\t"
+     (number->string (convert-output (event-amount event) nunits)) "\t"
+     nunits "\t"
+     (number->string (convert-output (* size (event-amount event)) aunits)) "\t"
+     aunits "\t"
+     (event-quality event) "\t"
+     (event-season event) "\t"
+     "£" (get-cost-string-from-nutrient 0 (event-nutrients event) size) "\t"
+     "£" (get-cost-string-from-nutrient 1 (event-nutrients event) size) "\t"
+     "£" (get-cost-string-from-nutrient 2 (event-nutrients event) size) "\t"
+     "£" (padcash->string (list-ref costs 0)) "\t"
+     "£" (padcash->string (list-ref costs 1)) "\t"
+     "£" (padcash->string (list-ref costs 2))
+     )))
 
 (define (stringify-field field)
   (foldl
@@ -590,7 +607,9 @@
             "gallons"
             "tonnes"))))
 
-(define costs (list 0.79 0.62 0.49))
+(define (get-cost-string-from-nutrient nutrient-index amounts mul)
+  (padcash->string (* (list-ref amounts nutrient-index)
+                      (list-ref costs nutrient-index) mul)))
 
 (define (run-calc prepend)
   (let ((amounts (calc-nutrients))
@@ -607,11 +626,11 @@
                     'text (number->string (convert-output (list-ref amounts 2) "kg/ha")))
      ;; costs
      (update-widget 'text-view (get-id (string-append prepend "costn"))
-                    'text (padcash->string (* (list-ref amounts 0) (list-ref costs 0))))
+                    'text (get-cost-string-from-nutrient 0 amounts 1))
      (update-widget 'text-view (get-id (string-append prepend "costp"))
-                    'text (padcash->string (* (list-ref amounts 1) (list-ref costs 1))))
+                    'text (get-cost-string-from-nutrient 1 amounts 1))
      (update-widget 'text-view (get-id (string-append prepend "costk"))
-                    'text (padcash->string (* (list-ref amounts 2) (list-ref costs 2))))
+                    'text (get-cost-string-from-nutrient 2 amounts 1))
      )))
 
 (define (spacer size)
@@ -886,7 +905,7 @@
     (text-view (make-id "splash-title") "The Farm Crap App" 40 centre-layout)
     (text-view (make-id "splash-about") "Manage your muck with the Farm Crap App" 20 centre-layout)
     (spacer 20)
-    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am/kernow'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>." 15 centre-layout)
+    (text-view (make-id "splash-blurb") "Developed by <a href='http://fo.am/kernow'>FoAM Kernow</a> on behalf of the <a href='www.swarmhub.co.uk'>SWARM Knowledge Hub</a>, a Rural Development Programme for England (RDPE) initiative managed by <a href='http://www.duchy.ac.uk/'>Duchy College Rural Business School</a>, in partnership with Rothamsted Research North Wyke." 15 centre-layout)
     (spacer 20)
     (button (make-id "f2") "Get started!" 20 fillwrap
             (lambda () (list (start-activity-goto "main" 2 ""))))
@@ -1045,7 +1064,7 @@
       'vertical
       (layout 'fill-parent 'wrap-content 1 'centre)
       (list
-       (text-view (make-id "out-crop-text") "Crop Availible" 15 fillwrap)
+       (text-view (make-id "out-crop-text") "Crop Available" 15 fillwrap)
        (linear-layout
         (make-id "h")
         'horizontal
@@ -1067,7 +1086,7 @@
      'vertical
      (layout 'fill-parent 'wrap-content 1 'centre)
      (list
-      (text-view (make-id "cost-text") "Estimated Equivalent Price" 15 fillwrap)
+      (text-view (make-id "cost-text") "Fertiliser Savings (as at Oct 2013)" 15 fillwrap)
       (linear-layout
        (make-id "h")
        'horizontal
@@ -1345,7 +1364,7 @@
       'vertical
       (layout 'fill-parent 'wrap-content 1 'centre)
       (list
-       (text-view (make-id "out-crop-text") "Crop Availible" 15 fillwrap)
+       (text-view (make-id "out-crop-text") "Crop Available" 15 fillwrap)
        (linear-layout
         (make-id "h")
         'horizontal
@@ -1368,7 +1387,7 @@
      'vertical
      (layout 'fill-parent 'wrap-content 1 'centre)
      (list
-      (text-view (make-id "cost-text") "Estimated Equivalent Price" 15 fillwrap)
+      (text-view (make-id "cost-text") "Fertiliser Savings (as at Oct 2013)" 15 fillwrap)
       (linear-layout
        (make-id "h")
        'horizontal
@@ -1504,14 +1523,15 @@
 
     (item "type" "Type")
     (item "date" "Date")
-    (item "eventview-amount" "Amount")
+    (item "eventview-amount" "Application Rate")
     (item "quality" "Quality")
     (item "season" "Season")
     (item "crop" "Crop")
     (item "soil" "Soil")
     (item "size" "Size")
     (item "total-amount" "Total Amount")
-
+    (spacer 20)
+    (text-view (make-id "fieldview-ca") "Crop Available" 30 fillwrap)
     (horiz
      (text-view (make-id "nt") "N Kg/ha" 20 fillwrap)
      (text-view (make-id "pt") "P Kg/ha" 20 fillwrap)
@@ -1520,6 +1540,78 @@
       (text-view (make-id "fcna") "12" 30 fillwrap)
       (text-view (make-id "fcpa") "75" 30 fillwrap)
       (text-view (make-id "fcka") "55" 30 fillwrap))
+
+     (spacer 20)
+     (text-view (make-id "cost-text") "Field Fertiliser Savings" 30 fillwrap)
+     (linear-layout
+      (make-id "h")
+      'horizontal
+      (layout 'fill-parent 'wrap-content 1 'centre)
+      (list
+
+       (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+       (linear-layout
+        (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+        (list
+         (image-view (make-id "imn") "pound" wrap)
+         (text-view (make-id "fcn-cost") "12" 25 wrap)))
+
+       (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+       (linear-layout
+        (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+        (list
+         (image-view (make-id "imp") "pound" wrap)
+         (text-view (make-id "fcp-cost") "75" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imk") "pound" wrap)
+          (text-view (make-id "fck-cost") "55" 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+        ))
+     (spacer 20)
+
+     (text-view (make-id "cost-text") "Fertiliser Unit Price (as at Oct 2013)" 30 fillwrap)
+     (linear-layout
+      (make-id "h")
+      'horizontal
+      (layout 'fill-parent 'wrap-content 1 'centre)
+      (list
+
+       (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+
+       (linear-layout
+        (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+        (list
+         (image-view (make-id "imn") "pound" wrap)
+         (text-view (make-id "fcunit-n") (padcash->string (list-ref costs 0)) 25 wrap)))
+
+       (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+       (linear-layout
+        (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+        (list
+         (image-view (make-id "imp") "pound" wrap)
+         (text-view (make-id "fcunit-p") (padcash->string (list-ref costs 1)) 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 2 'centre))
+
+        (linear-layout
+         (make-id "h") 'horizontal (layout 'wrap-content 'wrap-content 0.2 'centre)
+         (list
+          (image-view (make-id "imk") "pound" wrap)
+          (text-view (make-id "fcunit-k") (padcash->string (list-ref costs 2)) 25 wrap)))
+
+        (space (layout 'wrap-content 'wrap-content 0.9 'centre))
+        ))
+
+     (spacer 20)
 
      (linear-layout
       (make-id "gallery")
@@ -1609,6 +1701,10 @@
          (update-widget 'text-view (get-id "type") 'text (event-type (current-event)))
          (update-widget 'text-view (get-id "date") 'text (date->string (event-date (current-event))))
 
+         (update-widget 'text-view (get-id "fcn-cost") 'text (get-cost-string-from-nutrient 0 (event-nutrients (current-event)) (event-size (current-event))))
+         (update-widget 'text-view (get-id "fcp-cost") 'text (get-cost-string-from-nutrient 1 (event-nutrients (current-event)) (event-size (current-event))))
+         (update-widget 'text-view (get-id "fck-cost") 'text (get-cost-string-from-nutrient 2 (event-nutrients (current-event)) (event-size (current-event))))
+
          (update-widget 'text-view (get-id "eventview-amount") 'text
                         (string-append
                          (number->string (convert-output (event-amount (current-event))
@@ -1692,13 +1788,50 @@
                15 fillwrap)
     (spacer 20)
     (text-view (make-id "about-text4")
-               "The data for the Farm Crap App has been compiled from <a href='http://www.swarmhub.co.uk/index.php?dlrid=3956'>Defra RB209 Fertiliser Manual</a> and the <a href='http://www.swarmhub.co.uk/think_manure.php?id=3121'>Think Manures handbook</a>."
+               "The data for the Farm Crap App has been compiled from Defra RB209 Fertiliser Manual and the <a href='http://www.swarmhub.co.uk/think_manure.php?id=3121'>Think Manures handbook</a>. Fertiliser values are based on October 2013 prices taken from MANNER NPK."
                15 fillwrap)
     (spacer 20)
-    (button (make-id "back") "Get started!" 20 fillwrap
+    (button (make-id "goto-nvz") "About Nitrate Vulnerable Zones" 20 fillwrap
             (lambda ()
               (list
-               (update-widget 'camera-preview (get-id "camera") 'shutdown 0)
+               (start-activity "nvz" 1 ""))))
+    (spacer 20)
+    (button (make-id "back") "Back" 20 fillwrap
+            (lambda ()
+              (list (finish-activity 99)))))
+   (lambda (activity arg)
+     (activity-layout activity))
+   (lambda (activity arg)
+     (list))
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity) '())
+   (lambda (activity requestcode resultcode) '()))
+
+  (activity
+   "nvz"
+   (vert
+    (text-view (make-id "about-title") "Farming in a NVZ" 40 fillwrap)
+    (text-view (make-id "about-text")
+               "If you farm land within an NVZ (Nitrate Vulnerable Zone) there are legal restrictions on when you can apply slurries and manures to the land and how much you can apply in a calendar year. To find the full list of compliance regulations please visit: <a href='www.gov.uk/nitrate-vulnerable-zones'>www.gov.uk/nitrate-vulnerable-zones</a>"
+               15 fillwrap)
+    (spacer 20)
+    (text-view (make-id "about-text2")
+               "<b>It is not permitted to spread organic manures to any field at a rate that would result in the TOTAL N supplied exceed 250kg N/ha in any rolling 12 month period.</b>"
+               15 fillwrap)
+    (spacer 20)
+    (text-view (make-id "about-text3")
+               "The Farm Crap App <b>does not</b> calculate total N supply but rather crop available N. If you farm land in an NVZ you must make sure you are fully aware of the compliance rules, including closed periods for applying organic manures, and total nitrogen supply. If you don’t comply with the NVZ rules, you may be prosecuted and fined."
+               15 fillwrap)
+    (spacer 20)
+    (text-view (make-id "about-text4")
+               "More information on NVZs can be found on the Swarm Hub <a href='http://www.swarmhub.co.uk/sub_waste.php?id=2584'>here</a>."
+               15 fillwrap)
+    (spacer 20)
+    (button (make-id "back") "Back" 20 fillwrap
+            (lambda ()
+              (list
                (finish-activity 99)))))
 
    (lambda (activity arg)

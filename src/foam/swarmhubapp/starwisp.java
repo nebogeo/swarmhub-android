@@ -67,6 +67,7 @@ public class starwisp extends StarwispActivity
         ActivityManager.Register("eventview",EventViewActivity.class);
         ActivityManager.Register("about",AboutActivity.class);
         ActivityManager.Register("email",EmailActivity.class);
+        ActivityManager.Register("nvz",NVZActivity.class);
     };
 
 
